@@ -24,6 +24,9 @@ function Frame:SetTextColor(...) self.color={...} end
 function Frame:SetFontObject(value) self.font=value end
 function Frame:SetAutoFocus() end
 function Frame:SetMaxLetters(value) self.maxLetters=value end
+function Frame:SetMultiLine(value) self.multiline=value end
+function Frame:SetScrollChild(child) self.scrollChild=child end
+function Frame:HighlightText() self.highlighted=true end
 function Frame:SetFrameStrata() end
 function Frame:SetMovable() end
 function Frame:SetClampedToScreen() end

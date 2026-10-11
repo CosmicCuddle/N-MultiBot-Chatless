@@ -302,6 +302,88 @@ function Talents:SaveBuild(name, text, replace)
     return true, "Saved " .. (existing or clean) .. "."
 end
 
+-- Portable, plain-text account backup. WoW has no programmatic clipboard;
+-- players manually select/copy and paste the exported text.
+-- A 30 KB UI cap prevents silent truncation in the 3.3.5a EditBox.
+local BACKUP_LIMIT = 30000
+local BACKUP_HEADER = "NMB1\n"
+
+function Talents:ExportSavedBuilds()
+    local saved = self:ListSavedBuilds()
+    if #saved == 0 then return nil, "No saved builds to export." end
+    local rows = {BACKUP_HEADER}
+    for _, entry in ipairs(saved) do
+        local valid = validName(entry.name)
+        if valid ~= entry.name or entry.name:find("|",1,true) then
+            return nil, "Invalid saved name; use the WTF SavedVariables backup."
+        end
+        rows[#rows+1] = entry.name .. "|" .. entry.code .. "\n"
+    end
+    local exported = table.concat(rows)
+    if #exported > BACKUP_LIMIT then
+        return nil, "Backup exceeds 30 KB. Back up WTF SavedVariables instead."
+    end
+    return exported
+end
+
+function Talents:ImportSavedBuilds(text, allowOverwrite)
+    if type(text) ~= "string" or #text > BACKUP_LIMIT then
+        return false, "Backup text is missing or exceeds 30 KB. No changes."
+    end
+    local normalized = text:gsub("\r\n", "\n")
+    if normalized:sub(1,#BACKUP_HEADER) ~= BACKUP_HEADER then
+        return false, "Expected NMB1 backup header. No changes."
+    end
+    local body = normalized:sub(#BACKUP_HEADER+1)
+    if body == "" or body:sub(1,1) == "\n" or
+        body:find("\n\n",1,true) or body:find("\r",1,true) then
+        return false, "Empty or malformed backup. No changes."
+    end
+    local records, seen = {}, {}
+    for line in body:gmatch("([^\n]+)") do
+        local rawName, code = line:match("^([^|]+)|([^|]+)$")
+        local name = rawName and validName(rawName)
+        if not name or name ~= rawName or not code or
+            not self:ValidateCode(code) then
+            return false, "Invalid name or NT1 code in backup. No changes."
+        end
+        local key = string.lower(name)
+        if seen[key] then
+            return false, "Duplicate named build in backup. No changes."
+        end
+        seen[key] = true
+        records[#records+1] = {name=name,code=code}
+        if #records > MAX_SAVED_BUILDS then
+            return false, "Backup exceeds the 100-build limit. No changes."
+        end
+    end
+    if #records == 0 then return false, "Empty backup. No changes." end
+    local additions, conflicts = 0, 0
+    local store = getSavedStore(false) or {}
+    for _, entry in ipairs(records) do
+        local existing = findSavedName(entry.name)
+        if not existing then
+            additions = additions + 1
+        elseif store[existing] ~= entry.code then
+            conflicts = conflicts + 1
+        end
+    end
+    if #self:ListSavedBuilds() + additions > MAX_SAVED_BUILDS then
+        return false, "Import would exceed the 100-build limit. No changes."
+    end
+    if conflicts > 0 and not allowOverwrite then
+        return false, "Confirm overwrite: " .. conflicts ..
+            " existing name(s) differ. Click Import again to replace."
+    end
+    store = getSavedStore(true)
+    for _, entry in ipairs(records) do
+        local existing = findSavedName(entry.name)
+        store[existing or entry.name] = entry.code
+    end
+    return true, "Imported " .. #records ..
+        " saved build(s) locally. No server command sent."
+end
+
 function Talents:DeleteBuild(name)
     local clean, why = validName(name)
     if not clean then return false, why end
@@ -377,7 +459,10 @@ function Talents:EnsureWindow()
     presetPage:SetSize(660, 365)
     presetPage:SetPoint("TOPLEFT", window, "TOPLEFT", 0, -85)
     self.presetPage = presetPage
-
+    local backupPage = CreateFrame("Frame", nil, window)
+    backupPage:SetSize(660,365)
+    backupPage:SetPoint("TOPLEFT", window, "TOPLEFT", 0, -85)
+    self.backupPage = backupPage
 
     styledLabel(importPage, "Paste an NT1 code from N Talent Calculator or the website.",
         22, -23, 610)
@@ -571,6 +656,36 @@ function Talents:EnsureWindow()
     self.presetCounter = styledLabel(presetPage, "", 239, -302, 190,
         {1, 0.84, 0.42})
 
+    -- Page 4: user-controlled copy/paste backup, with no game commands.
+    styledLabel(backupPage, "BACKUP SAVED BUILDS  |  Plain-text NMB1 format",
+        22, -18, 610)
+    styledLabel(backupPage,
+        "Export: Ctrl+A, Ctrl+C. To import, paste an NMB1 backup below.",
+        22, -48, 610)
+    local backupScroll = CreateFrame("ScrollFrame", nil, backupPage,
+        "UIPanelScrollFrameTemplate")
+    backupScroll:SetPoint("TOPLEFT", backupPage, "TOPLEFT", 28, -81)
+    backupScroll:SetSize(590, 206)
+    local backupText = CreateFrame("EditBox", nil, backupScroll)
+    backupText:SetSize(560, 206)
+    backupText:SetMultiLine(true)
+    backupText:SetAutoFocus(false)
+    backupText:SetMaxLetters(BACKUP_LIMIT)
+    if _G.ChatFontNormal then backupText:SetFontObject(_G.ChatFontNormal) end
+    backupText:SetText("")
+    backupScroll:SetScrollChild(backupText)
+    self.backupText = backupText
+    local pendingImport
+    backupText:SetScript("OnTextChanged", function(box)
+        pendingImport = nil
+        if box.GetStringHeight then
+            box:SetHeight(math.max(206,box:GetStringHeight()+30))
+        end
+    end)
+    self.backupStatus = styledLabel(backupPage,
+        "No account data will be replaced without confirmation.",
+        22, -301, 610)
+
     self.showPage = function(page)
         pendingSave = nil
         Talents.pendingDelete = nil
@@ -579,6 +694,7 @@ function Talents:EnsureWindow()
         importPage:Hide()
         savedPage:Hide()
         presetPage:Hide()
+        backupPage:Hide()
         if page == 2 then
             savedPage:Show()
             Talents.title:SetText("SAVED TALENT BUILDS")
@@ -591,6 +707,14 @@ function Talents:EnsureWindow()
             input:ClearFocus()
             nameBox:ClearFocus()
             Talents:UpdatePresetPage()
+        elseif page == 4 then
+            backupPage:Show()
+            Talents.title:SetText("SAVED BUILDS BACKUP / IMPORT")
+            input:ClearFocus()
+            nameBox:ClearFocus()
+            pendingImport = nil
+            Talents.backupStatus:SetText(
+                "Export all, or paste an NMB1 backup to import.")
         else
             importPage:Show()
             Talents.title:SetText("NT1 TALENT IMPORT")
@@ -654,6 +778,45 @@ function Talents:EnsureWindow()
             Talents.pendingDelete = nil
             Talents:UpdateSavedPage()
             Talents.savedStatus:SetText(why)
+        end)
+
+    self.backupButton = button(savedPage, "Backup / Import", 499, 17, 137,
+        function() Talents.showPage(4) end)
+    self.exportButton = button(backupPage, "Export all", 22, 17, 119,
+        function()
+            local text, reason = Talents:ExportSavedBuilds()
+            if not text then
+                Talents.backupStatus:SetText(reason)
+                return
+            end
+            backupText:SetText(text)
+            backupText:SetFocus()
+            backupText:HighlightText()
+            Talents.backupStatus:SetText(
+                "Select all and copy (Ctrl+C). Nothing sent to server.")
+        end)
+    self.importButton = button(backupPage, "Import pasted", 152, 17, 152,
+        function()
+            local text = backupText:GetText()
+            local overwrite = pendingImport == text
+            local ok, reason = Talents:ImportSavedBuilds(text, overwrite)
+            if not ok and reason:find("Confirm overwrite:",1,true) then
+                pendingImport = text
+            else
+                pendingImport = nil
+            end
+            Talents.backupStatus:SetText(reason)
+            message(reason, not ok)
+        end)
+    self.backFromBackup = button(backupPage, "< Saved builds", 315, 17, 145,
+        function()
+            backupText:ClearFocus()
+            Talents.showPage(2)
+        end)
+    self.closeBackup = button(backupPage, "Cancel", 475, 17, 120,
+        function()
+            backupText:ClearFocus()
+            window:Hide()
         end)
 
     self.savedButton = button(importPage, "Saved builds >", 390, 18, 240,

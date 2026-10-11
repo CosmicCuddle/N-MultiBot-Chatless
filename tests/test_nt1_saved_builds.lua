@@ -17,6 +17,9 @@ function Frame:SetTextColor(...) self.color={...} end
 function Frame:SetFontObject(v) self.font=v end
 function Frame:SetAutoFocus() end
 function Frame:SetMaxLetters(v) self.maxLetters=v end
+function Frame:SetMultiLine(v) self.multiline=v end
+function Frame:SetScrollChild(child) self.scrollChild=child end
+function Frame:HighlightText() self.highlighted=true end
 function Frame:SetFrameStrata() end
 function Frame:SetMovable() end
 function Frame:SetClampedToScreen() end
@@ -256,5 +259,41 @@ click(again.originalSpecButton)
 assert(originalSpecsOpened and not again.window.visible,
     "Original bot specialization option must remain accessible")
 assert(#commands==0)
-print("NT1 account-wide saved builds and 40 class-filtered website presets: all checks passed")
+-- Portable plain-text backup: bulk export, round-trip, collision confirmation,
+-- format rejection and UI controls must remain entirely client-side.
+local backup, backupErr=again:ExportSavedBuilds()
+assert(backup and not backupErr and backup:find("^NMB1\n") and
+    backup:find("Restoration Test",1,true))
+local originalStore=_G.MultiBotNT1SavedBuilds
+_G.MultiBotNT1SavedBuilds={}
+assert(not again:ImportSavedBuilds("NMB1\nFake|not-a-build\n"))
+assert(not again:ImportSavedBuilds("NMB1\nGood|NT1:vanilla:mage:3g-1\n" ..
+    "Good|NT1:vanilla:mage:3g-2\n"))
+assert(#again:ListSavedBuilds()==0,
+    "Malformed import must never partially change saved data")
+assert(again:ImportSavedBuilds(backup))
+assert(#again:ListSavedBuilds()==10,"Restored expected 10 named builds")
+assert(again:GetSavedCode("Restoration Test")==shaman)
+assert(not again:ImportSavedBuilds("NMB1\nRestoration Test|NT1:vanilla:mage:3g-1\n"))
+assert(again:GetSavedCode("Restoration Test")==shaman,
+    "Existing conflicting name must stay unchanged before confirmation")
+assert(again:ImportSavedBuilds("NMB1\nRestoration Test|NT1:vanilla:mage:3g-1\n",true))
+assert(again:GetSavedCode("Restoration Test")==mage)
+_G.MultiBotNT1SavedBuilds=originalStore
+assert(again:Open())
+click(again.savedButton)
+click(again.backupButton)
+assert(again.page==4 and again.backupPage.visible and again.backupText.multiline)
+click(again.exportButton)
+assert(again.backupText.text:find("^NMB1\n") and
+    again.backupText.highlighted and #commands==0)
+again.backupText:SetText("NMB1\nRestoration Test|NT1:vanilla:mage:3g-1\n")
+click(again.importButton)
+assert(again.backupStatus.text:find("Confirm overwrite:",1,true) and
+    again:GetSavedCode("Restoration Test")==shaman and #commands==0)
+click(again.importButton)
+assert(again:GetSavedCode("Restoration Test")==mage and #commands==0)
+click(again.backFromBackup)
+assert(again.page==2 and again.savedPage.visible and #commands==0)
+print("NT1 account-wide saved builds, website filters and backup/import: all checks passed")
 
