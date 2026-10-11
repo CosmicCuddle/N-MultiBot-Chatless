@@ -88,6 +88,10 @@ assert(not importer:ValidateCode("NT1:vanilla:warrior:3g-1\n.naxxbot talents app
     "Chat-command injection must be rejected")
 assert(not importer:ValidateCode("NT1:vanilla:warrior:3g-10"),
     "Rank 10 is not valid in NT1")
+assert(not importer:ValidateCode("NT1:vanilla:warrior:3g-6"),
+    "Rank 6 is impossible in server Talent.dbc")
+assert(not importer:DescribeCode("NT1:vanilla:warrior:3g-9"),
+    "Malformed rank must not crash the read-only summary")
 assert(not importer:ValidateCode("NT1:other:warrior:2t-1"),
     "Unknown eras are rejected")
 
@@ -123,16 +127,19 @@ local ok=importer:SendToTarget("preview",importer.input:GetText())
 assert(ok and #commands==1 and commands[1]==
     ".naxxbot talents preview Testwarrior "..code,
     "Preview should send the exact read-only Naxxramas Core command")
+assert(importer:SendToTarget("preview",code) and #commands==2,
+    "Repeat Preview is read-only and does not authorize Apply")
+assert(importer.status and type(StaticPopupDialogs)=="table")
 assert(popup.visible,"Preview must keep input available")
 
 -- Code must never silently be sent to a new target.
 currentTarget={name="Otherwarrior",guid="Player-02",class="WARRIOR"}
 assert(not importer:SendToTarget("apply",code))
-assert(#commands==1)
+assert(#commands==2)
 currentTarget={name="Testwarrior",guid="Player-03",class="WARRIOR"}
 assert(not importer:SendToTarget("apply",code),
     "Same visible name with a different GUID must not be accepted")
-assert(#commands==1)
+assert(#commands==2)
 currentTarget={name="Testwarrior",guid="Player-01",class="WARRIOR"}
 
 -- WoW chat has a finite payload: do not issue truncated high-rank NT1 codes.
@@ -143,38 +150,44 @@ end
 local longCode="NT1:vanilla:warrior:"..table.concat(longParts, ".")
 assert(importer:ValidateCode(longCode,"warrior"))
 assert(not importer:SendToTarget("apply",longCode))
-assert(#commands==1,"Oversized chat payload must not reach the server")
+assert(#commands==2,"Oversized chat payload must not reach the server")
 
 importer.input:SetText(code)
 importer.input.scripts.OnEnterPressed(importer.input)
-assert(#commands==1 and popup.visible,
+assert(#commands==2 and popup.visible,
     "Enter in NT1 code field must never send Apply")
 local details=importer:DescribeCode(code)
 assert(details.class=="warrior" and details.era=="vanilla" and
     details.points==1 and details.role=="not specified")
 importer.applyButton.scripts.OnClick(importer.applyButton)
-assert(#commands==1 and activeConfirmation and
+assert(#commands==2 and activeConfirmation and
     activeConfirmation.text:find("Testwarrior",1,true) and
-    activeConfirmation.text:find("1 points",1,true),
+    activeConfirmation.text:find("1 selected points",1,true),
     "Apply requires confirmation with target and build summary")
+assert(activeConfirmation.text:find("1 selected points",1,true))
+assert(StaticPopupDialogs[activeConfirmation.key].text:find(
+    "No server Apply-ready check yet",1,true))
+local cancelledCallback=StaticPopupDialogs[activeConfirmation.key].OnAccept
 StaticPopupDialogs[activeConfirmation.key].OnCancel()
-assert(#commands==1 and popup.visible,
+assert(#commands==2 and popup.visible,
     "Cancel confirmation must not send any command")
 importer.applyButton.scripts.OnClick(importer.applyButton)
+cancelledCallback()
+assert(#commands==2,"A stale popup callback must not apply the next request")
 currentTarget={name="Otherwarrior",guid="Player-55",class="WARRIOR"}
 StaticPopupDialogs[activeConfirmation.key].OnAccept()
-assert(#commands==1 and popup.visible,
+assert(#commands==2 and popup.visible,
     "Changing target while confirming must block Apply")
 currentTarget={name="Testwarrior",guid="Player-01",class="WARRIOR"}
 importer.applyButton.scripts.OnClick(importer.applyButton)
 importer.input:SetText("NT1:vanilla:warrior:3g-2")
 StaticPopupDialogs[activeConfirmation.key].OnAccept()
-assert(#commands==1 and popup.visible,
+assert(#commands==2 and popup.visible,
     "Editing the NT1 code while confirming must block Apply")
 importer.input:SetText(code)
 importer.applyButton.scripts.OnClick(importer.applyButton)
 StaticPopupDialogs[activeConfirmation.key].OnAccept()
-assert(#commands==2 and commands[2]==
+assert(#commands==3 and commands[3]==
     ".naxxbot talents apply Testwarrior "..code,
     "Only the second, validated confirmation may dispatch Apply")
 assert(not popup.visible,"Successful confirmed submission closes popup")
@@ -184,6 +197,6 @@ assert(#UISpecialFrames==1,"ESC registration must never duplicate")
 importer.input.scripts.OnEscapePressed(importer.input)
 assert(not popup.visible and not importer.input.focused,
     "Escape should cancel the window without sending commands")
-assert(#commands==2)
+assert(#commands==3)
 
-print("NT1 Bot Talents: toolbar, preview/apply, strict syntax, bound target, transport limit and Escape passed")
+print("NT1 Bot Talents: toolbar, preview, deliberate Apply and transport safety passed")

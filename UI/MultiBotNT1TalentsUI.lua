@@ -53,7 +53,7 @@ function Talents:ValidateCode(text, botClass)
     for part in (body .. "."):gmatch("(.-)%.") do
         count = count + 1
         if count > 120 then return nil, "The code has too many talent entries." end
-        local id, rank = part:match("^([0-9a-z]+)%-([1-9])$")
+        local id, rank = part:match("^([0-9a-z]+)%-([1-5])$")
         if not id or not rank or seen[id] then
             return nil, "Invalid or duplicate talent entry in NT1 code."
         end
@@ -91,6 +91,9 @@ function Talents:PrepareCommand(action, text)
     end
     local target, reason = getTarget()
     if not target then return nil, reason end
+    if not CLASSES[target.class] then
+        return nil, "Cannot identify targeted bot class. No command sent."
+    end
     if not self.boundTarget or target.name ~= self.boundTarget.name or
         (self.boundTarget.guid and target.guid ~= self.boundTarget.guid) then
         return nil, "Target changed. Reopen Talents for the correct bot."
@@ -110,8 +113,10 @@ function Talents:SendToTarget(action, text)
     -- Intentional GM/server command path, never a generic executor.
     SendChatMessage(plan.command, "SAY")
     return true, action == "preview" and
-        ("Preview sent for " .. plan.target.name .. ". Check server chat.") or
-        ("Apply sent for " .. plan.target.name .. ". Check server chat.")
+        ("Preview request sent for " .. plan.target.name ..
+            ". Server Preview does not mean Apply-ready.") or
+        ("Apply request dispatched for " .. plan.target.name ..
+            ". Check server chat for success or rejection.")
 end
 
 function Talents:DescribeCode(text)
@@ -140,14 +145,16 @@ function Talents:RequestApplyConfirmation()
         return false, "Confirmation dialog unavailable; no command sent."
     end
     self.pendingApply = {command=plan.command, code=plan.code}
+    local expected = self.pendingApply -- Old/stale popup callbacks fail closed.
     StaticPopupDialogs[APPLY_CONFIRM_KEY] = {
-        text="Change bot talents?\n%s\n\nThe server must approve this action.",
+        text="Apply experimental bot talents?\n%s\n\nNo server Apply-ready check yet. Server may reject.",
         button1="Apply talents", button2="Cancel", timeout=0,
         whileDead=1, hideOnEscape=1, preferredIndex=3,
         OnAccept=function()
             local pending = Talents.pendingApply
+            if not pending or pending ~= expected then return end
             Talents.pendingApply = nil
-            if not pending or not Talents.window or
+            if not Talents.window or
                 not Talents.window:IsShown() then
                 return
             end
@@ -168,11 +175,16 @@ function Talents:RequestApplyConfirmation()
                 Talents.window:Hide()
             end
         end,
-        OnCancel=function() Talents.pendingApply = nil end,
+        OnCancel=function()
+            if Talents.pendingApply == expected then
+                Talents.pendingApply = nil
+            end
+        end,
     }
     local shown = StaticPopup_Show(APPLY_CONFIRM_KEY,
         plan.target.name .. " (" .. string.upper(summary.class) .. ")\n" ..
-        string.upper(summary.era) .. ", " .. summary.points .. " points")
+        string.upper(summary.era) .. ", " .. summary.points ..
+        " selected points (local only)")
     if not shown then
         self.pendingApply = nil
         return false, "Confirmation could not open. No command sent."
@@ -499,7 +511,8 @@ function Talents:EnsureWindow()
 
     self.status = styledLabel(importPage, "No command sent.", 22, -203, 606)
     self.buildSummary = styledLabel(importPage,
-        "Build: paste an NT1 code to see class, era and points.", 22, -231, 606,
+        "Local summary only (not an Apply-ready or level-adjusted plan).",
+        22, -231, 606,
         {0.69, 0.85, 1})
     styledLabel(importPage, "Apply requires confirmation and a bot backup.",
         22, -259, 610, {1, 0.67, 0.44})
@@ -514,10 +527,10 @@ function Talents:EnsureWindow()
             Talents.buildSummary:SetText("Build: " ..
                 string.upper(details.class) .. " | " ..
                 string.upper(details.era) .. " | " ..
-                details.points .. " points | Role: " .. details.role)
+                details.points .. " selected (local) | Role: " .. details.role)
         else
             Talents.buildSummary:SetText(
-                "Build: paste a valid NT1 code to see class, era and points.")
+                "Local summary only; paste an NT1 code (not server validation).")
         end
     end)
     local function submit(action)
@@ -996,7 +1009,8 @@ function Talents:Open()
     local window = self:EnsureWindow()
     self.targetLabel:SetText("Bot: " .. target.name ..
         "  |  Class: " .. (target.class or "unknown"))
-    self.status:SetText("Preview is read-only. Server chat confirms results.")
+    self.status:SetText(
+        "Preview is read-only; it does not confirm Apply eligibility.")
     self.input:SetText("")
     self.nameBox:SetText("")
     self.selectedName = nil
@@ -1015,7 +1029,7 @@ function MultiBot.InitializeNT1TalentsUI(tRight)
         "INV_Misc_Book_07",
         "NT1 Talents - selected Playerbot" ..
         "\n|cffffffffTarget a bot and paste an NT1 build from N Talent Calculator or the website.|r" ..
-        "\n|cffffaa55Apply changes actual bot talents. Preview is read-only.|r" ..
+        "\n|cffffaa55Apply requires confirmation; server may still reject.|r" ..
         "\n\n|cffff0000Left-click: open NT1 build paste box|r" ..
         "\n|cff999999Requires Naxxramas Core BotTalentImport AccessMode 1 or 2.|r"
     )
