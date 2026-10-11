@@ -97,8 +97,8 @@ function SendChatMessage(s,channel)
 end
 dofile("Data/NT1WebsitePresets.lua")
 assert(type(MultiBot.NT1WebsitePresets)=="table" and
-    #MultiBot.NT1WebsitePresets==47,
-    "Retain 40 pinned website presets plus 7 owner-supplied Warrior builds")
+    #MultiBot.NT1WebsitePresets==54,
+    "Keep 40 pinned + 7 Warrior + 7 new Warlock/Mage presets")
 dofile("UI/MultiBotNT1TalentsUI.lua")
 local api=assert(MultiBot.NT1Talents)
 local mage="NT1:vanilla:mage:3g-1"
@@ -198,14 +198,15 @@ assert(not again:DeleteBuild("missing"))
 assert(again:DeleteBuild("RESTORATION TEST"))
 assert(again:GetSavedCode("Restoration Test")==nil)
 assert(#commands==0)
--- Website presets: 40 originally pinned, 7 newly approved Warrior builds.
--- Warlock and Death Knight stay excluded; legacy bot specs stay available.
-local counts={druid=9,hunter=8,mage=3,priest=7,rogue=6,shaman=7,warrior=7}
+-- Website presets: 40 originally pinned, 7 Warrior, 7 Warlock/Mage.
+-- Only Death Knight is explicitly excluded. Paladin has no approved codes.
+local counts={druid=9,hunter=8,mage=5,priest=7,rogue=6,shaman=7,warrior=7,warlock=5}
 for class,count in pairs(counts) do
     assert(#again:ListWebsitePresets(class)==count,
         "Unexpected pinned website preset count for "..class)
 end
-assert(#again:ListWebsitePresets("warlock")==0)
+assert(#again:ListWebsitePresets("warlock")==5)
+assert(#again:ListWebsitePresets("WARLOCK")==5)
 assert(#again:ListWebsitePresets("WARRIOR")==7)
 assert(#again:ListWebsitePresets("deathknight")==0)
 assert(#again:ListWebsitePresets("paladin")==0)
@@ -258,20 +259,60 @@ for _,expected in ipairs(expectedWarrior) do
     warriorSeen[expected.category]=(warriorSeen[expected.category] or 0)+1
 end
 assert(warriorSeen.Raid==4 and warriorSeen.Solo==3)
+-- The seven approved completion links must retain their precise NT1 codes,
+-- class, Raid/Solo placement, role, and names (not just total row count).
+local newApproved = {
+    {class="warlock", category="Raid", name="Affliction Warlock", role="DPS", variant=1, code="NT1:vanilla:warlock:ru-2.rv-5.rw-2.rx-3.rz-2.sd-2.sx-1.sy-5.th-1.ul-2.xy-3.xz-3.y2-1.yi-3.zm-1.zo-2.1ad-5.1af-3.1d0-3.1gb-2"},
+    {class="warlock", category="Raid", name="Demonology Warlock", role="DPS", variant=1, code="NT1:vanilla:warlock:q7-5.q8-5.qs-1.qv-5.rb-2.xx-2.xz-3.y0-2.y2-1.y3-2.yi-3.yk-5.z1-2.z2-5.zl-1.zm-1.1af-3.1g8-1.1gb-2"},
+    {class="warlock", category="Solo", name="Affliction Warlock", role="DPS", variant=1, code="NT1:vanilla:warlock:rt-3.ru-2.rv-5.rw-2.rx-3.rz-2.sx-1.sy-5.ul-2.xz-3.y0-2.y1-3.y2-1.y3-2.yi-3.zm-1.zo-2.1ad-1.1af-3.1d0-3.1gb-2"},
+    {class="warlock", category="Solo", name="Demonology Warlock", role="DPS", variant=1, code="NT1:vanilla:warlock:rt-1.rv-5.rw-2.rx-3.rz-2.ul-2.xz-3.y0-1.y1-3.y2-1.y3-2.yi-3.yk-5.z1-2.z2-5.zl-1.zm-1.1af-3.1d0-3.1g8-1.1gb-2"},
+    {class="warlock", category="Solo", name="Destruction Warlock", role="DPS", variant=1, code="NT1:vanilla:warlock:q5-2.q7-5.qp-3.qr-1.qs-2.qu-5.qv-5.qw-1.r9-1.rd-2.xz-3.y1-3.y2-1.yi-2.z2-5.zm-1.1af-3.1eh-1.1gb-2.1gf-3"},
+    {class="mage", category="Solo", name="Arcane Mage", role="DPS", variant=1, code="NT1:vanilla:mage:11-2.1p-1.1q-3.1r-3.1t-2.1u-3.1x-1.23-5.25-5.28-5.29-3.2a-2.2e-1.2f-1.bp-3.kl-2.vq-3.19t-3.1pq-3"},
+    {class="mage", category="Solo", name="Fire Mage", role="DPS", variant=1, code="NT1:vanilla:mage:n-2.p-3.q-5.s-2.t-1.w-1.x-3.y-5.z-5.10-1.11-2.1p-1.1q-3.1r-3.1t-2.1u-3.1v-2.1x-1.19j-3.19t-3"},
+}
+for _,expected in ipairs(newApproved) do
+    local matched=false
+    for _,actual in ipairs(again:ListWebsitePresets(expected.class)) do
+        if actual.category==expected.category and
+            actual.name==expected.name and actual.role==expected.role and
+            actual.variant==expected.variant and actual.code==expected.code then
+            matched=true
+        end
+    end
+    assert(matched,"Missing or altered completion code: "..expected.name)
+end
+assert(MultiBot.NT1CompletionPresetSource==
+    "Replace Website Talents.txt, owner-supplied 2026-10-11")
 -- Every bundled preset must remain valid and fit the existing transport.
 for _,entry in ipairs(MultiBot.NT1WebsitePresets) do
     assert(again:ValidateCode(entry.code,entry.class))
     assert(#(".naxxbot talents preview Examplebot "..entry.code)<=255,
         "Bundled website code cannot fit the supported SAY transport")
+    local points,seen=0,{}
+    for token in (entry.code:match("^NT1:vanilla:[a-z]+:(.+)$").."."):gmatch("(.-)%.") do
+        local id,rank=token:match("^([0-9a-z]+)%-([1-5])$")
+        assert(id and rank and not seen[id],"Duplicated or invalid talent ID")
+        seen[id]=true
+        points=points+tonumber(rank)
+    end
+    assert(points==51,"All uploaded Vanilla level-60 builds must spend 51 points")
 end
-assert(#again:ListFilteredWebsitePresets("mage")==3)
+-- One identical Druid Feral Tank code is intentionally offered in
+-- both Raid and Solo; category duplicate is not a missing build.
+assert(#again:ListFilteredWebsitePresets("mage")==5)
 again.presetFilter="Raid"
 assert(#again:ListFilteredWebsitePresets("mage")==1)
 again.presetFilter="Solo"
-assert(#again:ListFilteredWebsitePresets("mage")==2)
+assert(#again:ListFilteredWebsitePresets("mage")==4)
 again.presetFilter="All"
 local preset=again:ListWebsitePresets("mage")
-assert(#preset==3 and preset[1].code:match("^NT1:vanilla:mage:"))
+assert(#preset==5 and preset[1].code:match("^NT1:vanilla:mage:"))
+assert(#again:ListFilteredWebsitePresets("warlock")==5)
+again.presetFilter="Raid"
+assert(#again:ListFilteredWebsitePresets("warlock")==2)
+again.presetFilter="Solo"
+assert(#again:ListFilteredWebsitePresets("warlock")==3)
+again.presetFilter="All"
 again.presetFilter="Raid"
 assert(#again:ListFilteredWebsitePresets("warrior")==4)
 again.presetFilter="Solo"
@@ -408,6 +449,28 @@ assert(originalSpecsOpened and not again.window.visible,
     "Original bot specialization option must remain accessible")
 assert(#commands==0)
 -- Warrior now has seven website choices, five per page, without any auto-apply.
+-- Warlock now opens the website browser; its two Raid and three Solo
+-- entries stay local until explicitly requesting Preview or Apply.
+local warlockSpecsOpened=false
+target={name="Morthos",guid="Player-L",class="WARLOCK"}
+assert(again:OpenWebsitePresetsForBot("Morthos","Warlock",function()
+    warlockSpecsOpened=true
+end))
+assert(again.page==3 and again.presetClass=="warlock" and
+    again.presetCounter.text:find("(5 builds)",1,true) and #commands==0)
+click(again.presetFilterButtons.Solo)
+assert(again.presetCounter.text:find("(3 builds)",1,true))
+local expectedWarlockCode=again:ListFilteredWebsitePresets("warlock")[1].code
+click(again.presetRows[1])
+assert(again.page==1 and again.input.text==expectedWarlockCode and
+    again.selectedPreset.class=="warlock" and #commands==0,
+    "Warlock one-click import must not send a server command")
+assert(again:OpenWebsitePresetsForBot("Morthos","Warlock",function()
+    warlockSpecsOpened=true
+end))
+click(again.originalSpecButton)
+assert(warlockSpecsOpened and not again.window.visible and #commands==0,
+    "Warlock must retain original Playerbots Bot specs access")
 local warriorSpecsOpened=false
 target={name="Valiant",guid="Player-W",class="WARRIOR"}
 assert(again:OpenWebsitePresetsForBot("Valiant","Warrior",function()

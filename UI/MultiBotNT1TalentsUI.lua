@@ -369,10 +369,10 @@ end
 function Talents:ListWebsitePresets(className)
     local class = type(className)=="string" and
         className:lower():gsub("[^a-z]", "") or ""
-    -- Warlock and Death Knight are still explicitly excluded, even if a
-    -- future data snapshot accidentally contains an entry for either.
-    -- Warrior is now approved (7 direct owner-supplied Vanilla presets).
-    if class=="warlock" or class=="deathknight" then
+    -- Death Knight remains explicitly excluded, even if a future data
+    -- refresh accidentally contains an entry. Warlock now has five
+    -- owner-approved Vanilla presets (2 Raid, 3 Solo); Warrior has seven.
+    if class=="deathknight" then
         return {}
     end
     local result = {}
