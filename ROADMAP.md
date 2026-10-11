@@ -51,6 +51,16 @@ Original pinned source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea9
 | README.md | new user instructions, source notes and risks |
 | ROADMAP.md | this permanent maintainer handover |
 
+### 11 October 2026 — planned NT1 interface polish (approved direction; not implemented)
+
+- **Owner feedback from actual Warrior website-preset browser screenshot:** seven correct choices, filters, five entries/page and one-click import now display, but the screen looks like an unpolished utility panel rather than an integrated, purpose-built 3.3.5a feature. Owner agreed: **finish remaining Saved Builds and persistence tests first; then perform a dedicated, reversible NT1 visual polish pass**.
+- **Desired appearance:** native Wrath-era Blizzard interface, not a modern web-style design. Keep the existing addon window size or adapt only after testing at the owner's enlarged/stylised font. Use existing client UI texture/9-slice-style borders and consistent muted backgrounds, section separation, Blizzard-like headings and contextual role/era text, and restrained accent colours rather than full-width same-red rows.
+- **Information architecture:** consistent Page 1 Import, Page 2 Saved Builds, Page 3 Website Presets, Page 4 Backup/Restore headers. Page 3 clearly separates filter bar, selectable preset rows, pagination, short non-alarming help/status and footer. Row names remain easy to read; Raid/Solo and Tank/DPS/Healer visibly distinguishable, variation names remain intact. Keep the five-item pagination model until a specific replacement has been visually proven.
+- **Accessibility and UX:** prioritise readability and hierarchy for large UI scaling/dyslexic readers; stable alignment, adequate spacing, short labels, large hit targets, keyboard-focus sanity, distinguish hover/selection without relying on colour alone, no unnecessary repeated uppercase paragraphs. Ensure tooltips explain safe loading vs actual Apply.
+- **Non-negotiable behaviour to preserve:** 47 exact owner-approved website entries, Warrior 7 (4 Raid/3 Solo), Warlock/Death Knight exclusion, original Bot specs fallback, class/era/role, one-click preset load, account SavedVariables, two-click overwrite/delete, NMB1 import/export limits, protected secure auto-targeting, fresh target/GUID checks and final Apply confirmation. No automatic Apply or server/SQL/DBC changes.
+- **Implementation gate:** finish Page 1/2 save-load, overwrite/delete, /reload+relog and Page 4 NMB1 tests **before UI edits**; take MultiBot+WTF backup. Make the polish on a separately identifiable development commit/checkpoint within the existing draft PR (or a dedicated branch when agreed), retain simple rollback, run Lua 5.1 regressions/lint/format + package, inspect in WoW at large font, verify every page and protected Apply again before merge/public release.
+- **Current state:** UI redesign is a documented plan only. No appearance code changed. Await owner confirmation of Saved Builds workflow next.
+
 ### 11 October 2026 — in-game acceptance: Apply confirmation and Cancel
 
 - **Player-confirmed live UI test:** auto-targeting the intended bot on first Apply click succeeded in WoW 3.3.5a; the owner subsequently tested the **second Apply click, correct-bot confirmation and Cancel** and reported **that also worked**.
