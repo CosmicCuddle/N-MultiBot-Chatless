@@ -811,8 +811,12 @@ function Talents:EnsureWindow()
     -- Page 3 first visual polish: a deliberate list container and quieter
     -- rows. Page 1 protected Apply behaviour remains byte-for-byte intact.
     -- Website data is pinned; filters only affect display, not commands.
-    styledLabel(presetPage, "Select a talent build",
-        22, -18, 610)
+    -- At enlarged in-game font scales the old footer help text collided
+    -- with Previous/Next. Show the safety hint in the existing top
+    -- instruction slot instead; leave the list and footer positions alone.
+    self.presetStatus=styledLabel(presetPage,
+        "Select a build. No talents are applied.",
+        22,-18,610,{0.86,0.85,0.79})
     self.presetListPanel=listPanel(presetPage,22,-75,616,196)
     self.presetRows = {}
     self.presetPageIndex = 1
@@ -843,9 +847,7 @@ function Talents:EnsureWindow()
         end)
         self.presetRows[i]=row
     end
-    self.presetStatus = styledLabel(presetPage,
-        "Loading never applies talents.", 22, -280, 610,
-        {0.72,0.79,0.80})
+    -- No status label between the full-height list and bottom navigation.
     self.presetCounter = styledLabel(presetPage, "", 239, -302, 190,
         {1, 0.84, 0.42})
 
@@ -1145,7 +1147,7 @@ function Talents:UpdatePresetPage()
     end
     self.presetCounter:SetText("Page " .. self.presetPageIndex ..
         " / " .. maxPages .. "  (" .. #list .. " builds)")
-    self.presetStatus:SetText("Loading never applies talents.")
+    self.presetStatus:SetText("Select a build. No talents are applied.")
 end
 
 -- Red website preset buttons jump straight to the read-only import editor.

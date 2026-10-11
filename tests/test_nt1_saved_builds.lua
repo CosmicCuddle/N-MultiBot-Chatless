@@ -332,8 +332,17 @@ assert(again:OpenWebsitePresetsForBot("Zevon","Mage",function()
 end))
 assert(again.page==3 and again.presetPage.visible and
     not again.importPage.visible and #commands==0)
-assert(again.presetStatus.text=="Loading never applies talents.",
-    "Preset help must be short at enlarged UI font scale")
+assert(again.presetStatus.text=="Select a build. No talents are applied.",
+    "Preset help must be concise and include the no-Apply reassurance")
+assert(again.presetStatus.position and
+    again.presetStatus.position[1]=="TOPLEFT" and
+    again.presetStatus.position[5]==-18 and
+    again.presetFilterButtons.All.position[5]==-43 and
+    again.presetListPanel.position[5]==-75,
+    "Safety hint must be above the filters and list, not in the footer")
+assert(again.presetStatus.position[5]>
+    again.presetFilterButtons.All.position[5],
+    "Safety hint must not overlap Previous/Next at large font scale")
 assert(not again.loadPresetButton,
     "Website preset rows should load directly without a redundant button")
 assert(again.presetListPanel and again.presetListPanel.width==616 and
