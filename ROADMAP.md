@@ -16,7 +16,7 @@ Repository: https://github.com/CosmicCuddle/N-MultiBot-Chatless
 Merged feature branch: feature/nt1-saved-builds-pages; [PR #4](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/4)  
 Status: merged as main commit 178a4c0f0070695eeb493d16aca7bb5c4b7a93cf; [main test/package run 38128866892](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128866892) passed. Main lint passed. No player screenshots/relog verification yet; no standalone stable release or collection update.  
 Baseline for rollback: MultiBot 4.0.3 from main.  
-Next immediate task: continue in-game review of draft [PR #5](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/5), current code `ed9e591`, using the test ZIP from [Actions 38153407162](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38153407162) (artifact `multibot-nt1-talents-test` ID `11707522814`). **Owner confirmed automatic target selection works in-game.** Next verify a subsequent Apply click displays the correct named-bot confirmation and Cancel sends no command, then non-targetable fallback. Back up MultiBot and account WTF SavedVariables before changing installs. Remaining reviews: Page 1 Import/Preview, Page 2 Saved Builds, Page 3 website filters/original Bot specs, Page 4 backup/import, enlarged UI and relog persistence. Secure targeting success alone does not verify Apply or server mutation. Do not merge or publish before owner acceptance.
+Next immediate task: continue in-game review of draft [PR #5](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/5), latest tested functional code `ed9e591`, using the test ZIP from [Actions 38153407162](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38153407162) (artifact `multibot-nt1-talents-test` ID `11707522814`). **Owner confirmed secure auto-targeting AND second-click correct-bot confirmation with Cancel worked in game.** Next: Page 1 Save code and Page 2 Saved Builds browse/load (start with one uniquely named test build, do not Apply). Then test five-entry pagination, overwrite/delete safety, relog persistence, Page 4 backups, original Bot specs and large-font layout. Still unverified: untargetable/out-of-range and combat fallback, server mutation and no-other-side-effects. Keep prior MultiBot/WTF backups, PR draft, and public N Addon Collection v2.0.0 unchanged. Do not merge or publish until owner acceptance.
 
 ### Requirements and implemented design
 
@@ -25,7 +25,7 @@ Next immediate task: continue in-game review of draft [PR #5](https://github.com
 - Separate account-wide SavedVariables table: MultiBotNT1SavedBuilds, declared in MultiBot.toc, independent of N Talent Calculator and existing MultiBot profiles. Previous builds are never migrated or deleted.
 - The original bot-roster Set Talents action offers website presets as a third window view, filtered to the exact class of that roster bot. Raid/Solo, spec, role and variation are visible. Clicking any red website preset row **loads its NT1 code and name directly into Page 1** in a single click; no second Load button or server request. Preview and Apply remain separate actions.
 - Bot specs button on the website page keeps access to the previous bridge-driven Playerbots specialization selector. For classes without converted website records, Set Talents uses the old selector immediately.
-- From a bot roster, the user may not actually be targeting that character in-game. Applying is then locked until the user targets that bot and presses Confirm target. Wrong target or class cannot bypass validation.
+- From a bot roster, the player may not already be targeting that character in-game. A secure, exact-name **Apply-click** attempt can select it; the first click binds a newly found bot, the second opens confirmation, and final Apply remains separately confirmed. An optional **Check target** control and quiet manual-target fallback remain. Wrong name, class or previously verified GUID cannot bypass checks.
 - Naxxramas Core remains the only authority for applying talents, talent/era/point restrictions, ownership and experimental rollback. No C++/SQL/DBC or Playerbots bridge changes.
 - Published N Addon Collection v2.0.0 remains unchanged and does not acquire the new calculator or MultiBot snapshot.
 
@@ -50,6 +50,13 @@ Original pinned source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea9
 | .github/workflows/nt1-playerbot-talents.yml | Lua syntax/tests, website snapshot and bundle artifact |
 | README.md | new user instructions, source notes and risks |
 | ROADMAP.md | this permanent maintainer handover |
+
+### 11 October 2026 — in-game acceptance: Apply confirmation and Cancel
+
+- **Player-confirmed live UI test:** auto-targeting the intended bot on first Apply click succeeded in WoW 3.3.5a; the owner subsequently tested the **second Apply click, correct-bot confirmation and Cancel** and reported **that also worked**.
+- Mark the targeted UI interaction and cancellation route **accepted for the tested scenario**. This report does not independently prove packet/chat telemetry, server mutation, untargetable/out-of-range behaviour, combat restrictions or other-bot identity changes. No experimental talents need be applied for this test.
+- **Next functional test:** create a uniquely named saved code in Page 1 (no Apply), browse Page 2 and load it back to Import. Check name/code match and that opening/closing doesn't discard it. Later test existing-name overwrite (requires second Save), two-click Delete, pagination past five entries, /reload and full relog, Page 4 NMB1 export/import with restorable backup, and original Bot specs.
+- Work remains in draft PR #5 and unchanged public collection; preserve addon and account WTF backups before destructive Save overwrite/delete or file replacement.
 
 ### 11 October 2026 — in-game acceptance: secure auto-target works
 
