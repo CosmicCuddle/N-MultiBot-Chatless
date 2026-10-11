@@ -108,6 +108,103 @@ function Talents:SendToTarget(action, text)
         ("Apply sent for " .. target.name .. ". Check server chat.")
 end
 
+-- These are account-wide addon SavedVariables, deliberately separate
+-- from MultiBotDB/AceDB profile settings and from N Talent Calculator saves.
+-- WoW loads MultiBotNT1SavedBuilds before addon Lua and writes it on logout.
+local MAX_SAVED_BUILDS = 100
+local MAX_BUILD_NAME = 40
+
+local function getSavedStore(create)
+    if type(MultiBotNT1SavedBuilds) == "table" then
+        return MultiBotNT1SavedBuilds
+    end
+    if create then
+        MultiBotNT1SavedBuilds = {}
+        return MultiBotNT1SavedBuilds
+    end
+    return nil
+end
+
+local function findSavedName(name)
+    local store = getSavedStore(false)
+    if not store then return nil end
+    local key = string.lower(name)
+    for savedName, code in pairs(store) do
+        if type(savedName) == "string" and
+            type(code) == "string" and string.lower(savedName) == key then
+            return savedName
+        end
+    end
+    return nil
+end
+
+local function validName(name)
+    name = trim(name)
+    if #name < 1 or #name > MAX_BUILD_NAME or name:find("[%c|]") then
+        return nil, "Enter a build name (1-40 characters, no line breaks)."
+    end
+    return name
+end
+
+function Talents:ListSavedBuilds()
+    local result = {}
+    local store = getSavedStore(false) or {}
+    for name, code in pairs(store) do
+        if type(name) == "string" and type(code) == "string" then
+            local valid = self:ValidateCode(code)
+            if valid then
+                local era, class = code:match("^NT1:([a-z]+):([a-z]+):")
+                result[#result+1] = {name=name, code=code,
+                    era=era, class=class}
+            end
+        end
+    end
+    table.sort(result, function(a,b)
+        local x,y = string.lower(a.name),string.lower(b.name)
+        if x == y then return a.name < b.name end
+        return x < y
+    end)
+    return result
+end
+
+function Talents:GetSavedCode(name)
+    local clean = validName(name)
+    if not clean then return nil end
+    local existing = findSavedName(clean)
+    local store = getSavedStore(false)
+    return existing and store and store[existing] or nil
+end
+
+function Talents:SaveBuild(name, text, replace)
+    local clean, why = validName(name)
+    if not clean then return false, why end
+    local code, invalid = self:ValidateCode(text)
+    if not code then return false, invalid end
+    local existing = findSavedName(clean)
+    local store = getSavedStore(false)
+    if existing and store[existing] ~= code and not replace then
+        return false, "Build exists. Save again to replace it."
+    end
+    if not existing and #self:ListSavedBuilds() >= MAX_SAVED_BUILDS then
+        return false, "Saved build limit reached (100)."
+    end
+    store = getSavedStore(true)
+    store[existing or clean] = code
+    return true, "Saved " .. (existing or clean) .. "."
+end
+
+function Talents:DeleteBuild(name)
+    local clean, why = validName(name)
+    if not clean then return false, why end
+    local existing = findSavedName(clean)
+    local store = getSavedStore(false)
+    if not existing or not store then
+        return false, "Build not found."
+    end
+    store[existing] = nil
+    return true, "Deleted " .. existing .. "."
+end
+
 local function styledLabel(parent, text, x, y, width, color)
     local label = parent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     label:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
@@ -130,8 +227,8 @@ end
 function Talents:EnsureWindow()
     if self.window then return self.window end
     local window = CreateFrame("Frame", WINDOW_NAME, UIParent)
-    window:SetWidth(590)
-    window:SetHeight(348)
+    window:SetWidth(660)
+    window:SetHeight(440)
     window:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     window:SetFrameStrata("DIALOG")
     window:SetMovable(true)
@@ -149,32 +246,54 @@ function Talents:EnsureWindow()
     window:SetBackdropColor(0.035, 0.03, 0.045, 0.98)
     window:SetBackdropBorderColor(0.68, 0.54, 0.30, 1)
 
-    local title = styledLabel(window, "NT1 TALENT IMPORT", 22, -22, 480,
+    self.title = styledLabel(window, "NT1 TALENT IMPORT", 22, -22, 560,
         {1, 0.84, 0.42})
-    if _G.GameFontNormalLarge then title:SetFontObject(_G.GameFontNormalLarge) end
+    if _G.GameFontNormalLarge then
+        self.title:SetFontObject(_G.GameFontNormalLarge)
+    end
     local close = CreateFrame("Button", nil, window, "UIPanelCloseButton")
     close:SetPoint("TOPRIGHT", window, "TOPRIGHT", -7, -6)
+    self.targetLabel = styledLabel(window, "", 22, -68, 610,
+        {1, 0.84, 0.42})
 
-    self.targetLabel = styledLabel(window, "", 22, -68, 540, {1, 0.84, 0.42})
-    styledLabel(window,
-        "Paste an NT1 build code below.",
-        22, -110, 540)
-    styledLabel(window, "Example (Warrior): " .. EXAMPLE, 22, -148, 540,
+    local importPage = CreateFrame("Frame", nil, window)
+    importPage:SetSize(660, 340)
+    importPage:SetPoint("TOPLEFT", window, "TOPLEFT", 0, -85)
+    local savedPage = CreateFrame("Frame", nil, window)
+    savedPage:SetSize(660, 340)
+    savedPage:SetPoint("TOPLEFT", window, "TOPLEFT", 0, -85)
+    self.importPage = importPage
+    self.savedPage = savedPage
+
+    styledLabel(importPage, "Paste an NT1 code from N Talent Calculator or the website.",
+        22, -23, 610)
+    styledLabel(importPage, "Example (Warrior): " .. EXAMPLE, 22, -66, 610,
         {0.69, 0.85, 1})
 
-    local input = CreateFrame("EditBox", nil, window, "InputBoxTemplate")
-    input:SetPoint("TOPLEFT", window, "TOPLEFT", 32, -189)
-    input:SetSize(526, 28)
+    local input = CreateFrame("EditBox", nil, importPage, "InputBoxTemplate")
+    input:SetPoint("TOPLEFT", importPage, "TOPLEFT", 32, -106)
+    input:SetSize(594, 28)
     input:SetAutoFocus(false)
     input:SetMaxLetters(MAX_CODE_LENGTH)
     input:SetText("")
     self.input = input
 
-    self.status = styledLabel(window, "No command sent.", 22, -235, 540)
-    styledLabel(window,
-        "Apply changes bot talents. Back up the bot first.",
-        22, -281, 540, {1, 0.67, 0.44})
+    styledLabel(importPage, "SAVE AS", 22, -158, 140, {1, 0.84, 0.42})
+    local nameBox = CreateFrame("EditBox", nil, importPage, "InputBoxTemplate")
+    nameBox:SetPoint("TOPLEFT", importPage, "TOPLEFT", 166, -149)
+    nameBox:SetSize(283, 28)
+    nameBox:SetAutoFocus(false)
+    nameBox:SetMaxLetters(MAX_BUILD_NAME)
+    nameBox:SetText("")
+    self.nameBox = nameBox
 
+    self.status = styledLabel(importPage, "No command sent.", 22, -203, 606)
+    styledLabel(importPage, "Apply changes bot talents. Back up the bot first.",
+        22, -253, 610, {1, 0.67, 0.44})
+
+    local pendingSave
+    nameBox:SetScript("OnTextChanged", function() pendingSave = nil end)
+    input:SetScript("OnTextChanged", function() pendingSave = nil end)
     local function submit(action)
         local ok, reason = Talents:SendToTarget(action, input:GetText())
         Talents.status:SetText(reason)
@@ -185,18 +304,163 @@ function Talents:EnsureWindow()
         end
         return ok
     end
-    button(window, "Preview", 22, 16, 110, function() submit("preview") end)
-    button(window, "Apply talents", 138, 16, 130, function() submit("apply") end)
-    button(window, "Cancel", 274, 16, 110, function()
-        input:ClearFocus()
-        window:Hide()
-    end)
 
-    -- Requested keyboard shortcut: pressing Enter applies to the bot the
-    -- user selected when opening this window (not a newly selected player).
+    self.saveButton = button(importPage, "Save code", 469, 162, 157,
+        function()
+            local name, code = nameBox:GetText(), input:GetText()
+            local trimmedName = trim(name)
+            local previous = Talents:GetSavedCode(trimmedName)
+            if previous and previous ~= trim(code) and
+                (not pendingSave or pendingSave.name ~= string.lower(trimmedName) or
+                 pendingSave.code ~= trim(code)) then
+                local valid, why = Talents:ValidateCode(code)
+                if not valid then
+                    Talents.status:SetText(why)
+                    return
+                end
+                pendingSave = {name=string.lower(trimmedName), code=trim(code)}
+                Talents.status:SetText("Save again to replace " .. trimmedName .. ".")
+                return
+            end
+            local ok, why = Talents:SaveBuild(trimmedName, code, previous ~= nil)
+            pendingSave = nil
+            Talents.status:SetText(why)
+            if ok then Talents.selectedName = trimmedName end
+        end)
+
+    self.previewButton = button(importPage, "Preview", 22, 18, 110,
+        function() submit("preview") end)
+    self.applyButton = button(importPage, "Apply talents", 138, 18, 130,
+        function() submit("apply") end)
+    self.cancelButton = button(importPage, "Cancel", 274, 18, 104,
+        function()
+            input:ClearFocus()
+            nameBox:ClearFocus()
+            window:Hide()
+        end)
+
+    -- Saved page uses five rows per page, not a single endless icon list.
+    -- Selecting or loading is read-only; no server command is sent here.
+    styledLabel(savedPage, "SAVED BUILDS  |  Select a build to review or manage.",
+        22, -21, 606)
+    self.savedRows = {}
+    local PAGE_SIZE = 5
+    self.savedPageIndex = 1
+    for i=1,PAGE_SIZE do
+        local slot = i
+        local rowButton = CreateFrame("Button", nil, savedPage,
+            "UIPanelButtonTemplate")
+        rowButton:SetSize(610, 31)
+        rowButton:SetPoint("TOPLEFT", savedPage, "TOPLEFT",
+            24, -60 - (i-1)*40)
+        rowButton:SetText("")
+        rowButton:SetScript("OnClick", function()
+            local list = Talents:ListSavedBuilds()
+            local entry = list[(Talents.savedPageIndex-1)*PAGE_SIZE + slot]
+            if not entry then return end
+            Talents.selectedName = entry.name
+            Talents:UpdateSavedPage()
+        end)
+        self.savedRows[i] = rowButton
+    end
+    self.savedStatus = styledLabel(savedPage,
+        "Choose a build. Loading never applies it.", 22, -267, 610)
+    self.savedPageCounter = styledLabel(savedPage, "", 239, -299, 190,
+        {1, 0.84, 0.42})
+
+    self.showPage = function(page)
+        pendingSave = nil
+        Talents.pendingDelete = nil
+        Talents.page = page
+        if page == 2 then
+            importPage:Hide()
+            savedPage:Show()
+            Talents.title:SetText("SAVED TALENT BUILDS")
+            input:ClearFocus()
+            nameBox:ClearFocus()
+            Talents:UpdateSavedPage()
+        else
+            savedPage:Hide()
+            importPage:Show()
+            Talents.title:SetText("NT1 TALENT IMPORT")
+        end
+    end
+
+    self.previousSavedPage = button(savedPage, "< Previous", 24, 49, 119,
+        function()
+            if Talents.savedPageIndex > 1 then
+                Talents.savedPageIndex = Talents.savedPageIndex - 1
+            end
+            Talents:UpdateSavedPage()
+        end)
+    self.nextSavedPage = button(savedPage, "Next >", 502, 49, 132,
+        function()
+            local count = #Talents:ListSavedBuilds()
+            local maxPages = math.max(1, math.ceil(count/PAGE_SIZE))
+            if Talents.savedPageIndex < maxPages then
+                Talents.savedPageIndex = Talents.savedPageIndex + 1
+            end
+            Talents:UpdateSavedPage()
+        end)
+    self.backButton = button(savedPage, "< Import", 22, 17, 140,
+        function() Talents.showPage(1) end)
+    self.loadButton = button(savedPage, "Load to import", 176, 17, 166,
+        function()
+            local chosen = Talents.selectedName
+            local code = chosen and Talents:GetSavedCode(chosen)
+            if not code then
+                Talents.savedStatus:SetText("Select a saved build first.")
+                return
+            end
+            input:SetText(code)
+            nameBox:SetText(chosen)
+            Talents.showPage(1)
+            Talents.status:SetText("Loaded " .. chosen ..
+                ". Use Preview or Apply separately.")
+            local era, class = code:match("^NT1:([a-z]+):([a-z]+):")
+            if Talents.boundTarget and Talents.boundTarget.class and
+                class ~= Talents.boundTarget.class then
+                Talents.status:SetText("Loaded " .. class ..
+                    " build; selected bot class is " ..
+                    Talents.boundTarget.class .. ". Cannot apply.")
+            end
+        end)
+    self.deleteButton = button(savedPage, "Delete", 355, 17, 130,
+        function()
+            local chosen = Talents.selectedName
+            if not chosen or not Talents:GetSavedCode(chosen) then
+                Talents.savedStatus:SetText("Select a saved build first.")
+                return
+            end
+            if Talents.pendingDelete ~= chosen then
+                Talents.pendingDelete = chosen
+                Talents.savedStatus:SetText("Click Delete again to remove " ..
+                    chosen .. ".")
+                return
+            end
+            local ok, why = Talents:DeleteBuild(chosen)
+            Talents.selectedName = nil
+            Talents.pendingDelete = nil
+            Talents:UpdateSavedPage()
+            Talents.savedStatus:SetText(why)
+        end)
+
+    self.savedButton = button(importPage, "Saved builds >", 390, 18, 240,
+        function()
+            Talents.savedPageIndex = 1
+            Talents.showPage(2)
+        end)
+
     input:SetScript("OnEnterPressed", function() submit("apply") end)
     input:SetScript("OnEscapePressed", function()
         input:ClearFocus()
+        window:Hide()
+    end)
+    nameBox:SetScript("OnEnterPressed", function()
+        nameBox:ClearFocus() -- Enter in the name field must never apply.
+    end)
+    nameBox:SetScript("OnEscapePressed", function()
+        nameBox:ClearFocus()
         window:Hide()
     end)
     if type(UISpecialFrames) == "table" then
@@ -204,7 +468,37 @@ function Talents:EnsureWindow()
     end
     window:Hide()
     self.window = window
+    self.showPage(1)
     return window
+end
+
+function Talents:UpdateSavedPage()
+    if not self.savedRows then return end
+    local list = self:ListSavedBuilds()
+    local size = #self.savedRows
+    local maxPages = math.max(1, math.ceil(#list/size))
+    if self.savedPageIndex > maxPages then
+        self.savedPageIndex = maxPages
+    end
+    for i, row in ipairs(self.savedRows) do
+        local entry = list[(self.savedPageIndex-1)*size + i]
+        if entry then
+            local chosen = self.selectedName == entry.name and "> " or "   "
+            local label = entry.name
+            if #label > 25 then label = label:sub(1,22) .. "..." end
+            row:SetText(chosen .. label .. "  |  " ..
+                string.upper(entry.class) .. " / " ..
+                string.upper(entry.era))
+            row:Show()
+        else
+            row:Hide()
+        end
+    end
+    self.savedPageCounter:SetText("Page " .. self.savedPageIndex ..
+        " / " .. maxPages .. "  (" .. #list .. " builds)")
+    self.savedStatus:SetText(self.selectedName and
+        ("Selected: " .. self.selectedName .. " (not applied)") or
+        "Choose a build. Loading never applies it.")
 end
 
 function Talents:Open()
@@ -216,6 +510,10 @@ function Talents:Open()
         "  |  Class: " .. (target.class or "unknown"))
     self.status:SetText("Preview is read-only. Server chat confirms results.")
     self.input:SetText("")
+    self.nameBox:SetText("")
+    self.selectedName = nil
+    self.savedPageIndex = 1
+    self.showPage(1)
     window:Show()
     self.input:SetFocus()
     return true
