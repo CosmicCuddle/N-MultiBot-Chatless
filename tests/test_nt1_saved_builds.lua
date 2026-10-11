@@ -49,6 +49,10 @@ function SendChatMessage(s,channel)
     assert(channel=="SAY")
     commands[#commands+1]=s
 end
+dofile("Data/NT1WebsitePresets.lua")
+assert(type(MultiBot.NT1WebsitePresets)=="table" and
+    #MultiBot.NT1WebsitePresets==40,
+    "Use precisely the 40 verified converted website presets")
 dofile("UI/MultiBotNT1TalentsUI.lua")
 local api=assert(MultiBot.NT1Talents)
 local mage="NT1:vanilla:mage:3g-1"
@@ -148,4 +152,59 @@ assert(not again:DeleteBuild("missing"))
 assert(again:DeleteBuild("RESTORATION TEST"))
 assert(again:GetSavedCode("Restoration Test")==nil)
 assert(#commands==0)
-print("NT1 saved-build persistence, names, overwrites, two-page GUI, deletion, pagination and no-auto-apply passed")
+-- Website presets are an immutable class-specific snapshot. Warrior and
+-- Warlock are excluded, with the original bot spec menu retained.
+local counts={druid=9,hunter=8,mage=3,priest=7,rogue=6,shaman=7}
+for class,count in pairs(counts) do
+    assert(#again:ListWebsitePresets(class)==count,
+        "Unexpected pinned website preset count for "..class)
+end
+assert(#again:ListWebsitePresets("warlock")==0)
+assert(#again:ListWebsitePresets("warrior")==0)
+assert(#again:ListWebsitePresets("deathknight")==0)
+assert(#again:ListWebsitePresets("paladin")==0)
+local preset=again:ListWebsitePresets("mage")
+assert(#preset==3 and preset[1].code:match("^NT1:vanilla:mage:"))
+local originalSpecsOpened=false
+assert(again:OpenWebsitePresetsForBot("Zevon","Mage",function()
+    originalSpecsOpened=true
+end))
+assert(again.page==3 and again.presetPage.visible and
+    not again.importPage.visible and #commands==0)
+assert(again.presetClass=="mage" and again.requestedBot=="Zevon")
+click(again.presetRows[1])
+assert(again.selectedPreset and again.selectedPreset.class=="mage")
+assert(#commands==0,"Selecting preset must never send chat commands")
+click(again.loadPresetButton)
+assert(again.page==1 and again.input.text==preset[1].code)
+assert(#commands==0,"Loading a website preset must never apply it")
+assert(again.boundTarget and again.boundTarget.name=="Zevon",
+    "Matching selected target may be safely bound for later review")
+-- Bot menu may be used without that bot targeted. In that case, loading is
+-- still allowed, but Confirm target is required before Preview/Apply.
+target={name="Differentmage",guid="Player-O",class="MAGE"}
+assert(again:OpenWebsitePresetsForBot("Zevon","mage",function()
+    originalSpecsOpened=true
+end))
+assert(again.boundTarget==nil and again.page==3)
+click(again.presetRows[1])
+click(again.loadPresetButton)
+assert(again.page==1 and again.input.text==preset[1].code)
+assert(not again:SendToTarget("apply",again.input.text))
+assert(#commands==0,"A menu-selected but untargeted bot must never receive apply")
+click(again.targetConfirm)
+assert(again.status.text:find("Target Zevon",1,true) and
+    again.boundTarget==nil)
+target={name="Zevon",guid="Player-Z",class="MAGE"}
+click(again.targetConfirm)
+assert(again.boundTarget and again.boundTarget.name=="Zevon")
+assert(#commands==0,"Target confirmation is not an apply action")
+assert(again:OpenWebsitePresetsForBot("Zevon","mage",function()
+    originalSpecsOpened=true
+end))
+click(again.originalSpecButton)
+assert(originalSpecsOpened and not again.window.visible,
+    "Original bot specialization option must remain accessible")
+assert(#commands==0)
+print("NT1 account-wide saved builds and 40 class-filtered website presets: all checks passed")
+
