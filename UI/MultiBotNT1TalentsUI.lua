@@ -182,13 +182,22 @@ end
 function Talents:OnTargetChanged()
     if not self.window or not self.window:IsShown() then return end
     if self.pendingApply then
-        -- Invalidate a confirmation as soon as target selection changes.
-        self.pendingApply=nil
-        if type(_G.StaticPopup_Hide)=="function" then
-            _G.StaticPopup_Hide(APPLY_CONFIRM_KEY)
-        end
-        if self.status then
-            self.status:SetText("Target changed. Click Apply again.")
+        -- TargetByName-style re-target events can arrive after the secure
+        -- hardware click. Do not dismiss a popup if the bot's exact GUID
+        -- and class still match. A genuinely different unit invalidates it.
+        local current=getTarget()
+        local bound=self.boundTarget
+        local same=current and bound and current.guid and bound.guid and
+            current.guid==bound.guid and current.class==bound.class and
+            current.name==bound.name
+        if not same then
+            self.pendingApply=nil
+            if type(_G.StaticPopup_Hide)=="function" then
+                _G.StaticPopup_Hide(APPLY_CONFIRM_KEY)
+            end
+            if self.status then
+                self.status:SetText("Target changed. Click Apply again.")
+            end
         end
     end
     if self.awaitingTarget and self.page==1 then
@@ -231,8 +240,15 @@ function Talents:ConfigureApplyAutoTarget()
 end
 
 function Talents:RequestApplyConfirmation()
+    local wasBound=self.boundTarget~=nil
     local matched,hint,guided=self:CheckIntendedTarget("apply")
     if not matched then return false,hint,guided end
+    -- If the macro just selected the roster bot, let any pending
+    -- PLAYER_TARGET_CHANGED event settle before opening an Apply popup.
+    -- A second deliberate Apply click is required, but no manual target.
+    if not wasBound then
+        return false, "Target verified. Click Apply talents again.", true
+    end
     local plan, errorText = self:PrepareCommand("apply", self.input:GetText())
     if not plan then return false, errorText end
     local summary = self:DescribeCode(plan.code)

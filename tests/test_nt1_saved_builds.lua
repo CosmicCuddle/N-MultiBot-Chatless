@@ -345,8 +345,15 @@ again.applyButton.simulateSecureClick=function(_,name)
 end
 click(again.applyButton)
 assert(not again.awaitingTarget and again.boundTarget and
-    again.boundTarget.name=="Zevon" and again.pendingApply and
-    #commands==0, "Secure target + Apply requires separate confirmation")
+    again.boundTarget.name=="Zevon" and not again.pendingApply and
+    #commands==0, "First secure target click must never open Apply")
+assert(again.status.text:find("Click Apply talents again",1,true))
+click(again.applyButton)
+assert(again.pendingApply and #commands==0,
+    "Second click after target selection opens confirmation only")
+again.window.scripts.OnEvent(again.window,"PLAYER_TARGET_CHANGED")
+assert(again.pendingApply and #commands==0,
+    "Same GUID event must not dismiss a valid popup")
 StaticPopupDialogs.MULTIBOT_NT1_APPLY_CONFIRM.OnCancel()
 assert(not again.pendingApply)
 again.applyButton.simulateSecureClick=nil
