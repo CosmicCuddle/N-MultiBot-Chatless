@@ -16,7 +16,7 @@ Repository: https://github.com/CosmicCuddle/N-MultiBot-Chatless
 Merged feature branch: feature/nt1-saved-builds-pages; [PR #4](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/4)  
 Status: merged as main commit 178a4c0f0070695eeb493d16aca7bb5c4b7a93cf; [main test/package run 38128866892](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128866892) passed. Main lint passed. No player screenshots/relog verification yet; no standalone stable release or collection update.  
 Baseline for rollback: MultiBot 4.0.3 from main.  
-Next immediate task: inspect and in-game test draft [PR #5](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/5) using the test ZIP from [Actions 38132825282](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38132825282) (artifact `multibot-nt1-talents-test` ID `11699343446`). Back up the existing MultiBot directory and account WTF SavedVariables before replacing. Test Page 1 Import and Apply confirmation, Page 2 Saved Builds, Page 3 website filters, Page 4 backup/import, original Bot specs fallback, enlarged UI layout and relog persistence. CI is not proof of real game appearance. Do not merge or publish before owner acceptance.
+Next immediate task: continue in-game review of draft [PR #5](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/5), current code `ed9e591`, using the test ZIP from [Actions 38153407162](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38153407162) (artifact `multibot-nt1-talents-test` ID `11707522814`). **Owner confirmed automatic target selection works in-game.** Next verify a subsequent Apply click displays the correct named-bot confirmation and Cancel sends no command, then non-targetable fallback. Back up MultiBot and account WTF SavedVariables before changing installs. Remaining reviews: Page 1 Import/Preview, Page 2 Saved Builds, Page 3 website filters/original Bot specs, Page 4 backup/import, enlarged UI and relog persistence. Secure targeting success alone does not verify Apply or server mutation. Do not merge or publish before owner acceptance.
 
 ### Requirements and implemented design
 
@@ -50,6 +50,13 @@ Original pinned source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea9
 | .github/workflows/nt1-playerbot-talents.yml | Lua syntax/tests, website snapshot and bundle artifact |
 | README.md | new user instructions, source notes and risks |
 | ROADMAP.md | this permanent maintainer handover |
+
+### 11 October 2026 — in-game acceptance: secure auto-target works
+
+- **Player feedback:** After installing the latest test build, the project owner confirmed **the automatic targeting works in the WoW 3.3.5a client**. This validates the visible, real-game target-selection interaction on the tested setup, beyond Lua CI.
+- **Do not infer from this report** that the final Apply confirmation, server-side talent mutation, absence of Lua errors in every scenario, combat-mode behaviour, or all class presets were tested. Keep these as separate checks.
+- **Next focused manual test:** select a roster bot other than the current target; click Apply and verify it selects the correct bot; click Apply again to view the named-bot confirmation and choose **Cancel**. Test non-targetable/out-of-range bot fallback. Then resume Saved Builds, backup/import, relog and larger-font visual regression.
+- Continue retaining MultiBot and account WTF backups. PR #5 stays draft/unmerged. No N Addon Collection v2.0.0, Mod-Naxxramas-Core, database or DBC release/change.
 
 ### 11 October 2026 — protected one-click exact-name auto-target attempt
 
