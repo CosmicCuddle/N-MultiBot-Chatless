@@ -67,8 +67,8 @@ function SendChatMessage(s,channel)
 end
 dofile("Data/NT1WebsitePresets.lua")
 assert(type(MultiBot.NT1WebsitePresets)=="table" and
-    #MultiBot.NT1WebsitePresets==40,
-    "Use precisely the 40 verified converted website presets")
+    #MultiBot.NT1WebsitePresets==47,
+    "Retain 40 pinned website presets plus 7 owner-supplied Warrior builds")
 dofile("UI/MultiBotNT1TalentsUI.lua")
 local api=assert(MultiBot.NT1Talents)
 local mage="NT1:vanilla:mage:3g-1"
@@ -168,15 +168,15 @@ assert(not again:DeleteBuild("missing"))
 assert(again:DeleteBuild("RESTORATION TEST"))
 assert(again:GetSavedCode("Restoration Test")==nil)
 assert(#commands==0)
--- Website presets are an immutable class-specific snapshot. Warrior,
--- Warlock and Death Knight are excluded; original bot specs remain usable.
-local counts={druid=9,hunter=8,mage=3,priest=7,rogue=6,shaman=7}
+-- Website presets: 40 originally pinned, 7 newly approved Warrior builds.
+-- Warlock and Death Knight stay excluded; legacy bot specs stay available.
+local counts={druid=9,hunter=8,mage=3,priest=7,rogue=6,shaman=7,warrior=7}
 for class,count in pairs(counts) do
     assert(#again:ListWebsitePresets(class)==count,
         "Unexpected pinned website preset count for "..class)
 end
 assert(#again:ListWebsitePresets("warlock")==0)
-assert(#again:ListWebsitePresets("warrior")==0)
+assert(#again:ListWebsitePresets("WARRIOR")==7)
 assert(#again:ListWebsitePresets("deathknight")==0)
 assert(#again:ListWebsitePresets("paladin")==0)
 -- Death Knight is explicitly excluded, not merely absent from this snapshot.
@@ -193,6 +193,41 @@ assert(not again:OpenWebsitePresetsForBot(
 assert(#commands==0)
 table.remove(MultiBot.NT1WebsitePresets)
 assert(#MultiBot.NT1WebsitePresets==originalPresetCount)
+-- Compare the exact seven approved calculator links; do not drift their codes.
+local expectedWarrior = {
+    {category="Solo",name="Protection Warrior",role="Tank",variant=1,code="NT1:vanilla:warrior:3d-3.3g-1.3j-3.3k-2.3m-5.3u-5.3x-3.40-3.42-1.43-2.44-1.45-2.48-1.49-1.ie-2.ji-5.18h-5.19y-2.1qi-3.2bc-1"},
+    {category="Solo",name="Fury Warrior",role="DPS",variant=1,code="NT1:vanilla:warrior:3d-3.3i-2.3j-3.3m-5.4a-2.4b-5.4c-5.4d-5.4f-4.4g-1.4l-1.4n-1.ie-2.17x-5.1a1-3.1qi-3.2bc-1"},
+    {category="Solo",name="Arms Warrior",role="DPS",variant=1,code="NT1:vanilla:warrior:3d-3.3i-2.3j-3.3k-3.3m-3.3n-2.3o-5.3p-1.3r-1.3s-3.3t-1.4a-1.4b-2.4d-5.4h-3.4m-3.ie-2.1fn-1.1q0-3.1qi-3.2bc-1"},
+    {category="Raid",name="Protection Warrior",role="Tank",variant=1,code="NT1:vanilla:warrior:3g-1.3m-5.3u-5.3w-5.3x-3.40-3.42-1.43-2.44-1.45-2.48-1.49-1.4d-5.4f-1.ji-5.18h-5.19y-2.1qi-3"},
+    {category="Raid",name="Fury - Rend Flurry",role="DPS",variant=1,code="NT1:vanilla:warrior:3d-3.3g-1.3j-3.3k-3.3m-2.4a-5.4c-5.4d-5.4f-3.4l-1.4n-1.ht-1.ie-2.16t-2.16u-2.17x-5.1a1-3.1qi-3.2bc-1"},
+    {category="Raid",name="Fury - Anger Management",role="DPS",variant=2,code="NT1:vanilla:warrior:3d-3.3g-1.3j-3.3k-3.3m-2.3t-1.4a-5.4c-5.4d-5.4f-3.4l-1.4n-1.ht-1.ie-2.16t-2.16u-2.17x-5.1a1-3.1qi-3"},
+    {category="Raid",name="Arms Warrior",role="DPS",variant=1,code="NT1:vanilla:warrior:3d-3.3g-1.3j-3.3k-3.3m-1.3n-2.3o-5.3p-1.3q-1.3r-1.3s-3.3t-1.4d-5.4h-5.4m-2.ht-2.ie-2.16u-1.1fn-2.1q0-3.1qi-3.2bc-1"},
+}
+local warrior=again:ListWebsitePresets("warrior")
+assert(#warrior==#expectedWarrior)
+local warriorSeen={}
+for _,expected in ipairs(expectedWarrior) do
+    local matched=false
+    for _,actual in ipairs(warrior) do
+        if actual.category==expected.category and
+            actual.name==expected.name and actual.role==expected.role and
+            actual.variant==expected.variant and actual.code==expected.code then
+            matched=true
+        end
+    end
+    assert(matched,"Missing or changed approved Warrior code: "..expected.name)
+    local points, ids, entries=0,{},0
+    for pair in (expected.code:match("^NT1:vanilla:warrior:(.+)$").."."):gmatch("(.-)%.") do
+        local id,rank=pair:match("^([0-9a-z]+)%-([1-5])$")
+        assert(id and rank and not ids[id])
+        ids[id]=true
+        points=points+tonumber(rank)
+        entries=entries+1
+    end
+    assert(points==51 and entries>=1,"Warrior level-60 build must spend 51 points")
+    warriorSeen[expected.category]=(warriorSeen[expected.category] or 0)+1
+end
+assert(warriorSeen.Raid==4 and warriorSeen.Solo==3)
 -- Every bundled preset must remain valid and fit the existing transport.
 for _,entry in ipairs(MultiBot.NT1WebsitePresets) do
     assert(again:ValidateCode(entry.code,entry.class))
@@ -207,6 +242,11 @@ assert(#again:ListFilteredWebsitePresets("mage")==2)
 again.presetFilter="All"
 local preset=again:ListWebsitePresets("mage")
 assert(#preset==3 and preset[1].code:match("^NT1:vanilla:mage:"))
+again.presetFilter="Raid"
+assert(#again:ListFilteredWebsitePresets("warrior")==4)
+again.presetFilter="Solo"
+assert(#again:ListFilteredWebsitePresets("warrior")==3)
+again.presetFilter="All"
 local originalSpecsOpened=false
 assert(again:OpenWebsitePresetsForBot("Zevon","Mage",function()
     originalSpecsOpened=true
@@ -264,6 +304,34 @@ click(again.originalSpecButton)
 assert(originalSpecsOpened and not again.window.visible,
     "Original bot specialization option must remain accessible")
 assert(#commands==0)
+-- Warrior now has seven website choices, five per page, without any auto-apply.
+local warriorSpecsOpened=false
+target={name="Valiant",guid="Player-W",class="WARRIOR"}
+assert(again:OpenWebsitePresetsForBot("Valiant","Warrior",function()
+    warriorSpecsOpened=true
+end))
+assert(again.page==3 and again.presetClass=="warrior" and
+    again.presetCounter.text:find("Page 1 / 2",1,true) and
+    again.presetCounter.text:find("(7 builds)",1,true) and #commands==0)
+click(again.nextPresetPage)
+assert(again.presetPageIndex==2 and again.presetCounter.text:find("Page 2 / 2",1,true))
+click(again.presetFilterButtons.Raid)
+assert(again.presetPageIndex==1 and
+    again.presetCounter.text:find("(4 builds)",1,true))
+click(again.presetFilterButtons.Solo)
+assert(again.presetCounter.text:find("(3 builds)",1,true))
+click(again.presetRows[1])
+assert(again.selectedPreset and again.selectedPreset.class=="warrior")
+local selectedWarrior=again.selectedPreset.code
+click(again.loadPresetButton)
+assert(again.page==1 and again.input.text==selectedWarrior and #commands==0)
+assert(again:OpenWebsitePresetsForBot("Valiant","Warrior",function()
+    warriorSpecsOpened=true
+end))
+click(again.originalSpecButton)
+assert(warriorSpecsOpened and not again.window.visible and #commands==0,
+    "Warrior must keep the original Playerbots Bot specs action")
+target={name="Zevon",guid="Player-Z",class="MAGE"}
 -- Portable plain-text backup: bulk export, round-trip, collision confirmation,
 -- format rejection and UI controls must remain entirely client-side.
 local backup, backupErr=again:ExportSavedBuilds()

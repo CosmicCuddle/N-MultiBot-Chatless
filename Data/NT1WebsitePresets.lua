@@ -1,13 +1,15 @@
--- Converted website NT1 presets (Vanilla). Generated from the approved
--- Naxxramas Resource Hub full-sync source; DO NOT modify individual codes.
--- Source: https://github.com/CosmicCuddle/Naxxramas-Resource-Hub
--- File: assets/naxx-talent-sets-full-sync.js
--- Source commit: b77f25ea948d77488e9b934c8b66bbafe182948f
--- Warrior and Warlock are unfinished; Death Knight is also excluded by
--- explicit project decision. All three use the original Bot specs menu.
--- Other classes without approved converted NT1 presets are not fabricated.
+-- Converted website NT1 presets (Vanilla), with two approved sources:
+-- 40 original codes pinned to Naxxramas Resource Hub full-sync at commit
+-- b77f25ea948d77488e9b934c8b66bbafe182948f
+-- (assets/naxx-talent-sets-full-sync.js), plus seven Warrior codes supplied
+-- directly by the project owner via Resource Hub calculator links 2026-10-11.
+-- Never alter the original pinned 40 or the seven supplied NT1 strings.
+-- Warlock and Death Knight are excluded from website presets for now;
+-- the original Bot specs menu remains accessible for both and for Paladin.
+-- No server-side DBC/talent-eligibility verification implied.
 if not MultiBot then return end
 MultiBot.NT1WebsitePresetSource = "b77f25ea948d77488e9b934c8b66bbafe182948f"
+MultiBot.NT1WarriorPresetSource = "Owner-supplied calculator links, 2026-10-11"
 MultiBot.NT1WebsitePresets = {
     {class="druid", category="Raid", name="Feral Druid", role="DPS", variant=1, code="NT1:vanilla:druid:m3-3.m4-5.m6-3.m9-2.ma-2.mb-3.mc-1.md-2.mf-2.mg-5.mh-1.mu-5.mw-5.my-3.mz-1.wa-1.1du-3.1h6-2.1h7-2"},
     {class="druid", category="Raid", name="Balance Druid", role="DPS", variant=1, code="NT1:vanilla:druid:l6-5.l7-2.l8-2.lr-3.ls-3.lw-1.lx-3.ly-3.m0-5.m1-1.mt-2.mu-5.my-3.mz-1.1di-3.1dj-2.1em-2.1h7-2.1q7-2.1q8-1"},
@@ -49,4 +51,15 @@ MultiBot.NT1WebsitePresets = {
     {class="hunter", category="Solo", name="Beastmastery Hunter", role="DPS", variant=2, code="NT1:vanilla:hunter:11b-3.11c-5.11h-5.12e-5.12h-1.12i-1.12j-1.12k-1.12l-1.12m-2.12p-5.12r-2.12s-5.12t-4.194-2.1dz-2.1e6-3.1ei-2.1ne-1"},
     {class="hunter", category="Solo", name="Marksmanship Hunter", role="DPS", variant=1, code="NT1:vanilla:hunter:108-1.11a-2.11b-3.11c-5.11d-1.11f-3.11h-5.11l-1.11t-1.11u-3.12e-5.193-5.194-2.1e4-2.1e6-3.1ea-2.1ei-2.1ej-2.1ek-3"},
     {class="hunter", category="Solo", name="Marksmanship Hunter", role="DPS", variant=2, code="NT1:vanilla:hunter:108-1.11a-1.11b-3.11c-5.11d-1.11f-3.11g-1.11h-5.11l-1.11t-1.11u-3.12e-5.193-5.194-2.1e4-2.1e6-3.1ea-2.1ei-2.1ej-2.1ek-3"},
+
+    -- Approved user-supplied Warrior Vanilla level-60 builds, 2026-10-11.
+    -- Unlike the preceding 40 rows, these are NOT attributed to the old
+    -- pinned full-sync snapshot; they came directly from calculator URLs.
+    {class="warrior", category="Solo", name="Protection Warrior", role="Tank", variant=1, code="NT1:vanilla:warrior:3d-3.3g-1.3j-3.3k-2.3m-5.3u-5.3x-3.40-3.42-1.43-2.44-1.45-2.48-1.49-1.ie-2.ji-5.18h-5.19y-2.1qi-3.2bc-1"},
+    {class="warrior", category="Solo", name="Fury Warrior", role="DPS", variant=1, code="NT1:vanilla:warrior:3d-3.3i-2.3j-3.3m-5.4a-2.4b-5.4c-5.4d-5.4f-4.4g-1.4l-1.4n-1.ie-2.17x-5.1a1-3.1qi-3.2bc-1"},
+    {class="warrior", category="Solo", name="Arms Warrior", role="DPS", variant=1, code="NT1:vanilla:warrior:3d-3.3i-2.3j-3.3k-3.3m-3.3n-2.3o-5.3p-1.3r-1.3s-3.3t-1.4a-1.4b-2.4d-5.4h-3.4m-3.ie-2.1fn-1.1q0-3.1qi-3.2bc-1"},
+    {class="warrior", category="Raid", name="Protection Warrior", role="Tank", variant=1, code="NT1:vanilla:warrior:3g-1.3m-5.3u-5.3w-5.3x-3.40-3.42-1.43-2.44-1.45-2.48-1.49-1.4d-5.4f-1.ji-5.18h-5.19y-2.1qi-3"},
+    {class="warrior", category="Raid", name="Fury - Rend Flurry", role="DPS", variant=1, code="NT1:vanilla:warrior:3d-3.3g-1.3j-3.3k-3.3m-2.4a-5.4c-5.4d-5.4f-3.4l-1.4n-1.ht-1.ie-2.16t-2.16u-2.17x-5.1a1-3.1qi-3.2bc-1"},
+    {class="warrior", category="Raid", name="Fury - Anger Management", role="DPS", variant=2, code="NT1:vanilla:warrior:3d-3.3g-1.3j-3.3k-3.3m-2.3t-1.4a-5.4c-5.4d-5.4f-3.4l-1.4n-1.ht-1.ie-2.16t-2.16u-2.17x-5.1a1-3.1qi-3"},
+    {class="warrior", category="Raid", name="Arms Warrior", role="DPS", variant=1, code="NT1:vanilla:warrior:3d-3.3g-1.3j-3.3k-3.3m-1.3n-2.3o-5.3p-1.3q-1.3r-1.3s-3.3t-1.4d-5.4h-5.4m-2.ht-2.ie-2.16u-1.1fn-2.1q0-3.1qi-3.2bc-1"},
 }

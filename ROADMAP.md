@@ -33,23 +33,30 @@ Next immediate task: inspect and in-game test draft [PR #5](https://github.com/C
 
 Owner's site: https://cosmiccuddle.github.io/Naxxramas-Resource-Hub/  
 Repo: https://github.com/CosmicCuddle/Naxxramas-Resource-Hub  
-Source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea948d77488e9b934c8b66bbafe182948f. The current approved converted **Vanilla** records total exactly 40: Druid 9, Hunter 8, Mage 3, Priest 7, Rogue 6 and Shaman 7 (Raid and Solo variants). The two supplemental Rogue record links in naxx-talent-set-sync.js already occur in the full-sync dataset; do not double-count them.
+Original pinned source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea948d77488e9b934c8b66bbafe182948f — exactly **40 unchanged** converted Vanilla entries (Druid 9, Hunter 8, Mage 3, Priest 7, Rogue 6, Shaman 7). The two supplemental Rogue links in naxx-talent-set-sync.js already occur in that snapshot; do not double-count. **Additional user-authorised source (11 October 2026):** seven direct Naxxramas Resource Hub talent calculator links for Warrior, pasted by the project owner, not asserted to exist in the old pinned sync file. Total **47** entries. All new Warrior codes use `NT1:vanilla:warrior`, have 51 allocated points, no repeated talent IDs, and fit within the existing 255-character command envelope. Each code remains subject to current server-side DBC/era/eligibility checks; no in-game apply is claimed.
 
-**Explicitly exclude Warrior, Warlock, and Death Knight from website presets:** Warrior and Warlock remain unfinished/TO BE CONVERTED on the website; Death Knight is separately excluded by the project owner until further approval. This is a hard exclusion in the class-filtered preset browser even if future snapshot data accidentally contains a Death Knight entry. No verified Vanilla NT1 records for Paladin appear in the approved converted full-sync source. Preserve the original Bot specs list for all excluded/unsupported classes; do not fabricate presets. These are offline bundled website snapshots; WoW cannot fetch arbitrary web pages to update the list at runtime. Changes to the website require a deliberate source-pinned regeneration, review and updated tests.
+**Website class policy:** Warrior has now been explicitly approved by the owner for its seven directly supplied Vanilla builds (3 Solo; 4 Raid). **Continue excluding Warlock and Death Knight** from the preset browser even if accidentally present in a future update. Paladin has no approved converted NT1 website records. Keep the original Bot specs menu for these unavailable classes, and retain the **Bot specs button for Warrior** as well. Do not fabricate or rescale codes in the client. Website presets are bundled offline: deliberate source-pinned regeneration or owner-supplied link review, regression tests and roadmap documentation are required for changes.
 
 ### Files changed
 
 | Path | Responsibility |
 | --- | --- |
 | MultiBot.toc | 4.0.4 version, account-wide SavedVariables, website preset data load order |
-| Data/NT1WebsitePresets.lua | 40 exact converted website NT1 codes pinned to site commit |
+| Data/NT1WebsitePresets.lua | 40 original codes pinned to site commit + 7 exact Warrior codes from owner-supplied calculator links |
 | UI/MultiBotNT1TalentsUI.lua | account-wide name/save/load/delete, two import/storage pages, website class page, explicit target re-confirmation, no auto apply |
 | UI/MultiBotSpecUI.lua | integrate website page into existing Set Talents menu while retaining Bot specs access |
-| tests/test_nt1_saved_builds.lua | names, overwrite/delete, persistence simulation, 40 class-filtered website records, pages and no server mutation |
+| tests/test_nt1_saved_builds.lua | names, overwrite/delete, persistence simulation, 47 approved records (including seven exact Warrior codes), Raid/Solo filters, pages and no server mutation |
 | tests/test_nt1_bot_talents.lua | prior target safety and command assertions adapted to larger page window |
 | .github/workflows/nt1-playerbot-talents.yml | Lua syntax/tests, website snapshot and bundle artifact |
 | README.md | new user instructions, source notes and risks |
 | ROADMAP.md | this permanent maintainer handover |
+
+### 11 October 2026 — approved Warrior website presets
+
+- Owner supplied **seven** direct Resource Hub `NT1:vanilla:warrior` calculator URLs for level 60. **Solo:** Protection (Tank), Fury (DPS), Arms (DPS); **Raid:** Protection (Tank), Fury Rend Flurry build 01 (DPS), Fury Anger Management build 02 (DPS), Arms (DPS). All seven strings preserved exactly from user-supplied links and structurally checked at 51/51, with unique talent IDs and supported ranks 1–5. These offline checks are NOT proof of talent legality in the server DBC.
+- Remove Warrior from the previous class-exclusion guard while retaining **Warlock and Death Knight** exclusions and original Playerbots Bot specs fallback. Total library increases from **40** (unchanged pinned Resource Hub sync) to **47** (40 + 7 user-supplied Warrior links). Paladin remains unavailable for website presets due to absent verified converted links.
+- Add new tests for exact Warrior codes, point budgets, 4-Raid/3-Solo filters, 7-entry two-page navigation, Load-to-import without Apply, original Warrior Bot specs button and untouched Mage regression. No C++/SQL/DBC/mod-playerbots changes; no public collection release.
+- **Next:** Verify GitHub Actions on the updated PR #5 head; install the corrected standalone test ZIP with the already backed-up MultiBot/WTF files and confirm Warrior preset browser has All 7 (two pages), Raid 4 and Solo 3; check names/variant distinctions and original Bot specs. Keep Apply disabled until server development accepts actual in-game tests.
 
 ### 11 October 2026 — first real 3.3.5a preset browser test and UI correction
 
@@ -83,7 +90,7 @@ Source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea948d77488e9b934c8
 
 - Apply is now **two deliberate clicks**: button then WoW StaticPopup with bot name, class, expansion and spent points. Pressing Enter in the NT1 field only ends editing. Confirm-time preflight rechecks the live bot target/GUID, code, class and chat limit. Changed/closed dialogs abort without a server mutation. Preview is unchanged/read-only.
 - Page 1 includes a locally decoded class / era / points / known website role summary. This is an information display only, **not** server validation or evidence of usable points/ranks.
-- Page 3 includes All / Raid / Solo filters; each change resets selection and pagination. Existing original Bot specs fallback remains intact; Warrior, Warlock and Death Knight stay excluded from website presets.
+- Page 3 includes All / Raid / Solo filters; each change resets selection and pagination. Existing original Bot specs fallback remains intact; Warrior now has seven owner-approved website presets, while Warlock and Death Knight remain excluded.
 - New Lua mock regression checks for Enter safety, confirmation cancel/changed target/changed code, valid confirmation and Mage filter counts. These controls are unverified in WoW; all server permissions still apply. Test at enlarged UI scale and after /reload.
 - Page 4 adds portable plain-text **NMB1 backup and import** for account-wide named NT1 builds. Export includes all valid saved codes (within a 30 KB EditBox safety cap); users copy with Ctrl+A/C, and import via paste. A strict parser checks the header, required END marker and declared record count (to detect truncated copies/pastes), names, NT1 codes, duplicate names and 100-build capacity before mutating SavedVariables. Changed existing names require two consecutive Import clicks; same-name identical codes are left unchanged. Never transmits a server command; on oversized exports use a manual WTF SavedVariables backup. Automated mock tests exercise format rejection, round-trip, conflict confirmation, and UI page navigation.
 - **Next:** Verify PR head CI and inspect all four views in actual WoW 3.3.5a, especially multi-line scrolling, export text selection, copy/paste, overwrite confirmation, re-login persistence, font scaling and no Lua errors. Do not merge/release pending actual client acceptance.
@@ -91,7 +98,7 @@ Source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea948d77488e9b934c8
 ### Additional scope clarification — Death Knight exclusion (11 October 2026)
 
 - Project owner explicitly requested Death Knight be excluded from the website-based NT1 talent preset browser for now, alongside Warrior and Warlock. This affects **only the website preset option**, not the original Playerbot Bot specs functionality or the standalone manual NT1 import. Paladin remains unsupported due to absent verified converted website data.
-- A fail-closed class check in `ListWebsitePresets` now blocks Death Knight even if an accidental/future source refresh adds an entry. Lua regression tests inject a temporary Death Knight record and confirm it cannot be listed or opened. The pinned snapshot still contains exactly 40 unchanged converted builds for Druid/Hunter/Mage/Priest/Rogue/Shaman.
+- A fail-closed class check in `ListWebsitePresets` continues blocking Death Knight even if an accidental/future source refresh adds an entry. Lua regression tests inject a temporary Death Knight record and confirm it cannot be listed or opened. The original pinned snapshot contains 40 unchanged converted builds for Druid/Hunter/Mage/Priest/Rogue/Shaman, and seven newly owner-approved Warrior codes have since been added separately.
 - The feature remains within draft PR #5 on the existing follow-up branch; GitHub Actions must be rechecked at the new head. **No in-game acceptance claimed.** The public N Addon Collection v2.0.0 remains untouched.
 
 ### Post-merge review and follow-up safeguards (11 October 2026)
@@ -109,14 +116,14 @@ Source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea948d77488e9b934c8
 - [x] Account-wide saved NT1 storage and name collisions/overwrite/delete confirmation implemented.
 - [x] Two-page import vs Saved Builds view and website class-specific preset browser implemented.
 - [x] Original Bot specs option and fallback kept for unsupported/unconverted classes.
-- [x] Snapshot of 40 confirmed converted Vanilla NT1 entries pinned, explicitly excluding Warrior, Warlock and Death Knight.
+- [x] Preserve 40 pinned converted Vanilla NT1 entries and add seven owner-approved Warrior builds (47 total); keep Warlock and Death Knight excluded.
 - [x] Main Lua 5.1 syntax, save/browser, NT1 targeting, toolbar and consumables tests passed in [38128866892](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128866892). PR Lua format passed in [38128788059](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128788059); main Lua lint passed in [38128866899](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128866899).
 - [x] Latest main workflow [38128977780](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128977780) uploaded artifact multibot-nt1-talents-test (artifact 11698466588), source commit 7bc9baaf9e4f2e8f97c61ce475db2cdea6671dd5. Packaging/upload steps passed; manual archive extraction and in-game validation remain outstanding.
 - [ ] Before installation, shut down WoW; back up Interface/AddOns/MultiBot and account WTF SavedVariables (especially MultiBot.lua and separate account data). Keep v4.0.3 for rollback.
 - [ ] Page 1: Save two codes under different names, test second-click overwrite and name/input field. Enter in name field must NOT Apply.
 - [ ] Page 2: Browse names, five-per-page navigation, Load to import, two-click Delete. Confirm no server messages from browsing or saving.
 - [ ] /reload and relog: saved builds persist, including on a different character of the same account, without overwriting old MultiBot config.
-- [ ] Set Talents from a Mage's bot roster menu shows exactly 3 converted Raid/Solo website records. Compare Rogue, Hunter, Druid, Priest and Shaman counts; verify Warrior, Warlock and Death Knight are explicitly excluded from website presets, while Paladin has no converted source records. All four must retain the previous Bot specs menu.
+- [ ] Mage's bot roster Set Talents shows exactly 3 converted Raid/Solo records. Check Rogue, Hunter, Druid, Priest and Shaman counts. **Warrior should now show 7 entries (All 7 / Raid 4 / Solo 3), with two pages and original Bot specs button.** Warlock and Death Knight remain excluded; Paladin has no approved converted records. These three unavailable classes must retain the original Bot specs menu.
 - [ ] Selecting a website preset only loads it; actual target mismatches must fail until correct bot targeted and Confirm target clicked.
 - [ ] Test website Browse > Bot specs access to original bridge functionality.
 - [ ] Review all three screens with user's enlarged UI font, no overlapping buttons/labels, good page spacing and no Lua errors.

@@ -52,7 +52,7 @@ Do not submit a new command format, project talent steps in Lua or claim an offi
 
 ## Distinct project responsibilities
 
-**MultiBot only:** four-page UI, safe syntax hints, selection/filters, local account SavedVariables backups, deliberate request confirmation, display of future authoritative response fields, original spec fallback. Website presets for Warrior/Warlock/Death Knight remain excluded until owner approval, without banning those classes from manual NT1 or legacy Bot specs.
+**MultiBot only:** four-page UI, safe syntax hints, selection/filters, local account SavedVariables backups, deliberate request confirmation, display of future authoritative response fields, original spec fallback. Website presets for **Warrior are now owner-approved** as seven direct Vanilla calculator links (3 Solo, 4 Raid; each 51 talent points), alongside the original 40 pinned entries. **Warlock and Death Knight remain excluded** until separate owner approval; Paladin has no approved website presets. This does not restrict manual NT1 or original Bot specs (including the Warrior Bot specs button).
 
 **Mod-Naxxramas-Core only:** parsing loaded Talent.dbc/Spell.dbc, tier/prerequisite/full budget legality, target control, online/master/group checks, Alt Bot allowlist, issuing-human Individual Progression stages 8/13, server readiness/projection token enforcement, talent changes, equipment provenance and rollback. Alt Bot equipment/bags/earned items must not be changed by NT1.
 

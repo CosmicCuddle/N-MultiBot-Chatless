@@ -256,9 +256,10 @@ end
 function Talents:ListWebsitePresets(className)
     local class = type(className)=="string" and
         className:lower():gsub("[^a-z]", "") or ""
-    -- Explicit hold: these classes must use the original Bot specs menu,
-    -- even if a future website snapshot accidentally includes their codes.
-    if class=="warrior" or class=="warlock" or class=="deathknight" then
+    -- Warlock and Death Knight are still explicitly excluded, even if a
+    -- future data snapshot accidentally contains an entry for either.
+    -- Warrior is now approved (7 direct owner-supplied Vanilla presets).
+    if class=="warlock" or class=="deathknight" then
         return {}
     end
     local result = {}
