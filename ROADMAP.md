@@ -16,7 +16,7 @@ Repository: https://github.com/CosmicCuddle/N-MultiBot-Chatless
 Merged feature branch: feature/nt1-saved-builds-pages; [PR #4](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/4)  
 Status: merged as main commit 178a4c0f0070695eeb493d16aca7bb5c4b7a93cf; [main test/package run 38128866892](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128866892) passed. Main lint passed. No player screenshots/relog verification yet; no standalone stable release or collection update.  
 Baseline for rollback: MultiBot 4.0.3 from main.  
-Next immediate task: **Saved Builds persistence**: with the owner's newly saved test build, use `/reload` in WoW, reopen NT1 Saved Builds, verify its name and NT1 code are unchanged; then fully logout/relog and verify again (optionally on another character on the same account). The owner confirmed in-game that the Page 1 **Save code → Page 2 select → Load to import** round-trip works. Afterwards, inspect five-per-page navigation, two-click overwrite/delete, Page 4 NMB1 backup/export/import and original Bot specs fallback; complete functional testing before the agreed native Wrath UI makeover. Mage Ruby Solo (4), Warlock Hakua Raid (2) and Solo (3) were visibly verified in screenshots; All filters and newly added row load commands remain unverified. Previous secure auto-target and second-click confirmation+Cancel were player-tested on earlier code `ed9e591` and not retested after catalogue update. Preserve MultiBot and account WTF backups, do not invoke experimental Apply. Keep draft [PR #5](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/5) unmerged; public N Addon Collection v2.0.0 unchanged.
+Next immediate task: **Page 4 Saved Builds backup/export safety**. The owner has now confirmed the full in-game Saved Builds round-trip (Save As → Save code → browse → Load to import), persistence after `/reload`, **and persistence through logout/login** on the tested client. Before overwrite/delete/restore tests, preserve the current account WTF SavedVariables file, then open Backup / Import and export an NMB1 text copy, verify it contains the named build and `END|` count. Do not import or overwrite in this initial check. Afterwards test >5 build navigation, same-account second character, overwrite/delete two-click confirmations and a controlled NMB1 restore with backups; then begin the approved native Wrath UI makeover. Mage Ruby Solo 4, Warlock Hakua Raid 2/Solo 3 visibly confirmed; All filters and new row load still need independent tests. Auto-target plus Apply confirmation Cancel were previously tested on code `ed9e591`, not independently reverified after the catalogue change. No server Apply; keep draft [PR #5](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/5) unmerged and N Addon Collection v2.0.0 unchanged.
 
 ### Requirements and implemented design
 
@@ -50,6 +50,13 @@ Original pinned source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea9
 | .github/workflows/nt1-playerbot-talents.yml | Lua syntax/tests, website snapshot and bundle artifact |
 | README.md | new user instructions, source notes and risks |
 | ROADMAP.md | this permanent maintainer handover |
+
+### 11 October 2026 — in-game acceptance: Saved Builds persists across reload and relog
+
+- **Owner-reported actual WoW 3.3.5a tests:** after successfully saving and loading a named NT1 talent build, that build remains available after `/reload` **and after logging out and logging back in**. These are separate tested persistence checkpoints, not merely mock SavedVariables tests.
+- **Scope:** confirmed for the owner's tested character/account and installed development build. Same-account cross-character sharing, client exit/relaunch, five-per-page Saved Builds navigation, overwrite/delete and backup/export/import still require separate verification. No server talent application is implied.
+- **Next safe step:** with WoW closed, back up the account `WTF` SavedVariables file(s) storing MultiBot and the addon folder before destructive testing. Then reopen WoW, visit **Saved Builds > → Backup / Import**, click **Export all** and inspect/copy the complete NMB1 text without importing anything yet. Confirm the saved test build is present and the `END|` record count matches the entries. A new copy/paste backup is a prerequisite for overwrite/delete/restore testing.
+- No Lua/C++/SQL/DBC changes for these acceptance reports. Keep draft PR #5 unmerged and published N Addon Collection v2.0.0 unchanged.
 
 ### 11 October 2026 — in-game confirmation: Saved Builds round-trip
 
