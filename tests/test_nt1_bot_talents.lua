@@ -2,6 +2,13 @@
 -- Uses a minimal mocked frame surface. Does not change character data.
 MultiBot = {}
 UISpecialFrames = {}
+StaticPopupDialogs = {}
+local activeConfirmation
+function StaticPopup_Show(key, text)
+    assert(StaticPopupDialogs[key] and type(text)=="string")
+    activeConfirmation = {key=key,text=text}
+    return activeConfirmation
+end
 local frames, commands, errors = {}, {}, {}
 local currentTarget = {name="Testwarrior", class="WARRIOR", guid="Player-01"}
 local Frame = {}
@@ -137,10 +144,37 @@ assert(#commands==1,"Oversized chat payload must not reach the server")
 
 importer.input:SetText(code)
 importer.input.scripts.OnEnterPressed(importer.input)
+assert(#commands==1 and popup.visible,
+    "Enter in NT1 code field must never send Apply")
+local details=importer:DescribeCode(code)
+assert(details.class=="warrior" and details.era=="vanilla" and
+    details.points==1 and details.role=="not specified")
+importer.applyButton.scripts.OnClick(importer.applyButton)
+assert(#commands==1 and activeConfirmation and
+    activeConfirmation.text:find("Testwarrior",1,true) and
+    activeConfirmation.text:find("1 points",1,true),
+    "Apply requires confirmation with target and build summary")
+StaticPopupDialogs[activeConfirmation.key].OnCancel()
+assert(#commands==1 and popup.visible,
+    "Cancel confirmation must not send any command")
+importer.applyButton.scripts.OnClick(importer.applyButton)
+currentTarget={name="Otherwarrior",guid="Player-55",class="WARRIOR"}
+StaticPopupDialogs[activeConfirmation.key].OnAccept()
+assert(#commands==1 and popup.visible,
+    "Changing target while confirming must block Apply")
+currentTarget={name="Testwarrior",guid="Player-01",class="WARRIOR"}
+importer.applyButton.scripts.OnClick(importer.applyButton)
+importer.input:SetText("NT1:vanilla:warrior:3g-2")
+StaticPopupDialogs[activeConfirmation.key].OnAccept()
+assert(#commands==1 and popup.visible,
+    "Editing the NT1 code while confirming must block Apply")
+importer.input:SetText(code)
+importer.applyButton.scripts.OnClick(importer.applyButton)
+StaticPopupDialogs[activeConfirmation.key].OnAccept()
 assert(#commands==2 and commands[2]==
     ".naxxbot talents apply Testwarrior "..code,
-    "Enter should send exactly the selected bot's NT1 apply command")
-assert(not popup.visible,"Successful apply submission closes popup")
+    "Only the second, validated confirmation may dispatch Apply")
+assert(not popup.visible,"Successful confirmed submission closes popup")
 assert(importer:Open(),"Reopen should work")
 assert(importer.input.text=="","Reopen must not reuse a dangerous previously pasted code")
 assert(#UISpecialFrames==1,"ESC registration must never duplicate")

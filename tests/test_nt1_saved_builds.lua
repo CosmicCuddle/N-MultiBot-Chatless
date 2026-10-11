@@ -38,6 +38,13 @@ function CreateFrame(kind,name,parent,template)
 end
 local function click(b) assert(b and b.scripts.OnClick); b.scripts.OnClick(b) end
 UIParent=CreateFrame("Frame","UIParent")
+StaticPopupDialogs = {}
+local confirmations = {}
+function StaticPopup_Show(key,display)
+    confirmations[#confirmations+1]={key=key,text=display}
+    return confirmations[#confirmations]
+end
+function Frame:IsShown() return self.visible end
 UIErrorsFrame={AddMessage=function() end}
 function UnitExists(w) return w=="target" and target ~= nil end
 function UnitIsPlayer(w) return w=="target" and target ~= nil end
@@ -186,6 +193,12 @@ for _,entry in ipairs(MultiBot.NT1WebsitePresets) do
     assert(#(".naxxbot talents preview Examplebot "..entry.code)<=255,
         "Bundled website code cannot fit the supported SAY transport")
 end
+assert(#again:ListFilteredWebsitePresets("mage")==3)
+again.presetFilter="Raid"
+assert(#again:ListFilteredWebsitePresets("mage")==1)
+again.presetFilter="Solo"
+assert(#again:ListFilteredWebsitePresets("mage")==2)
+again.presetFilter="All"
 local preset=again:ListWebsitePresets("mage")
 assert(#preset==3 and preset[1].code:match("^NT1:vanilla:mage:"))
 local originalSpecsOpened=false
@@ -194,6 +207,14 @@ assert(again:OpenWebsitePresetsForBot("Zevon","Mage",function()
 end))
 assert(again.page==3 and again.presetPage.visible and
     not again.importPage.visible and #commands==0)
+click(again.presetFilterButtons.Raid)
+assert(again.presetFilter=="Raid" and
+    again.presetCounter.text:find("(1 builds)",1,true))
+click(again.presetFilterButtons.Solo)
+assert(again.presetFilter=="Solo" and
+    again.presetCounter.text:find("(2 builds)",1,true))
+click(again.presetFilterButtons.All)
+assert(again.presetFilter=="All" and #commands==0)
 assert(again.presetClass=="mage" and again.requestedBot=="Zevon")
 click(again.presetRows[1])
 assert(again.selectedPreset and again.selectedPreset.class=="mage")

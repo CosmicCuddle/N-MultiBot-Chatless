@@ -83,29 +83,101 @@ local function getTarget()
     return {name=name, class=class, guid=guid}, nil
 end
 
-function Talents:SendToTarget(action, text)
+-- Shared, read-only preflight; used for Preview and the Apply confirmation.
+-- Never trust a stored popup command or the original target alone.
+function Talents:PrepareCommand(action, text)
     if action ~= "apply" and action ~= "preview" then
-        return false, "Unknown talent action."
+        return nil, "Unknown talent action."
     end
     local target, reason = getTarget()
-    if not target then return false, reason end
+    if not target then return nil, reason end
     if not self.boundTarget or target.name ~= self.boundTarget.name or
         (self.boundTarget.guid and target.guid ~= self.boundTarget.guid) then
-        return false, "Target changed. Reopen Talents for the correct bot."
+        return nil, "Target changed. Reopen Talents for the correct bot."
     end
     local code, invalid = self:ValidateCode(text, target.class)
-    if not code then return false, invalid end
-
+    if not code then return nil, invalid end
     local command = ".naxxbot talents " .. action .. " " .. target.name .. " " .. code
     if #command > MAX_COMMAND_LENGTH then
-        return false, "Code is too long for one 3.3.5a chat command. No command sent."
+        return nil, "Code is too long for one 3.3.5a chat command. No command sent."
     end
-    -- Intentional GM/server command path. This is not a Playerbots whisper,
-    -- nor a new generic command-execution/fallback facility.
-    SendChatMessage(command, "SAY")
+    return {command=command, code=code, target=target}
+end
+
+function Talents:SendToTarget(action, text)
+    local plan, reason = self:PrepareCommand(action, text)
+    if not plan then return false, reason end
+    -- Intentional GM/server command path, never a generic executor.
+    SendChatMessage(plan.command, "SAY")
     return true, action == "preview" and
-        ("Preview sent for " .. target.name .. ". Check server chat.") or
-        ("Apply sent for " .. target.name .. ". Check server chat.")
+        ("Preview sent for " .. plan.target.name .. ". Check server chat.") or
+        ("Apply sent for " .. plan.target.name .. ". Check server chat.")
+end
+
+function Talents:DescribeCode(text)
+    local code, reason = self:ValidateCode(text)
+    if not code then return nil, reason end
+    local era, class, entries = code:match("^NT1:([a-z]+):([a-z]+):(.*)$")
+    local points = 0
+    for entry in (entries .. "."):gmatch("(.-)%.") do
+        points = points + tonumber(entry:match("%-([1-5])$"))
+    end
+    local role = "not specified"
+    if self.selectedPreset and self.selectedPreset.code == code then
+        role = self.selectedPreset.role or role
+    end
+    return {code=code, era=era, class=class, points=points, role=role}
+end
+
+local APPLY_CONFIRM_KEY = "MULTIBOT_NT1_APPLY_CONFIRM"
+function Talents:RequestApplyConfirmation()
+    local plan, errorText = self:PrepareCommand("apply", self.input:GetText())
+    if not plan then return false, errorText end
+    local summary = self:DescribeCode(plan.code)
+    if not summary then return false, "Invalid NT1 code." end
+    if type(StaticPopup_Show) ~= "function" or
+        type(StaticPopupDialogs) ~= "table" then
+        return false, "Confirmation dialog unavailable; no command sent."
+    end
+    self.pendingApply = {command=plan.command, code=plan.code}
+    StaticPopupDialogs[APPLY_CONFIRM_KEY] = {
+        text="Change bot talents?\n%s\n\nThe server must approve this action.",
+        button1="Apply talents", button2="Cancel", timeout=0,
+        whileDead=1, hideOnEscape=1, preferredIndex=3,
+        OnAccept=function()
+            local pending = Talents.pendingApply
+            Talents.pendingApply = nil
+            if not pending or not Talents.window or
+                not Talents.window:IsShown() then
+                return
+            end
+            local current, failure = Talents:PrepareCommand(
+                "apply", Talents.input:GetText())
+            if not current or current.command ~= pending.command or
+                current.code ~= pending.code then
+                local messageText = failure or "Build or target changed. No command sent."
+                Talents.status:SetText(messageText)
+                message(messageText, true)
+                return
+            end
+            local ok, result = Talents:SendToTarget("apply", pending.code)
+            Talents.status:SetText(result)
+            message(result, not ok)
+            if ok then
+                Talents.input:ClearFocus()
+                Talents.window:Hide()
+            end
+        end,
+        OnCancel=function() Talents.pendingApply = nil end,
+    }
+    local shown = StaticPopup_Show(APPLY_CONFIRM_KEY,
+        plan.target.name .. " (" .. string.upper(summary.class) .. ")\n" ..
+        string.upper(summary.era) .. ", " .. summary.points .. " points")
+    if not shown then
+        self.pendingApply = nil
+        return false, "Confirmation could not open. No command sent."
+    end
+    return true, "Confirm the target and build in the second dialog."
 end
 
 -- These are account-wide addon SavedVariables, deliberately separate
@@ -190,6 +262,17 @@ function Talents:ListWebsitePresets(className)
         if a.name~=b.name then return a.name<b.name end
         return a.variant<b.variant
     end)
+    return result
+end
+
+function Talents:ListFilteredWebsitePresets(className)
+    local all = self:ListWebsitePresets(className)
+    local filter = self.presetFilter or "All"
+    if filter == "All" then return all end
+    local result = {}
+    for _, entry in ipairs(all) do
+        if entry.category == filter then result[#result+1] = entry end
+    end
     return result
 end
 
@@ -319,12 +402,28 @@ function Talents:EnsureWindow()
     self.nameBox = nameBox
 
     self.status = styledLabel(importPage, "No command sent.", 22, -203, 606)
-    styledLabel(importPage, "Apply changes bot talents. Back up the bot first.",
-        22, -253, 610, {1, 0.67, 0.44})
+    self.buildSummary = styledLabel(importPage,
+        "Build: paste an NT1 code to see class, era and points.", 22, -231, 606,
+        {0.69, 0.85, 1})
+    styledLabel(importPage, "Apply requires confirmation and a bot backup.",
+        22, -259, 610, {1, 0.67, 0.44})
 
     local pendingSave
     nameBox:SetScript("OnTextChanged", function() pendingSave = nil end)
-    input:SetScript("OnTextChanged", function() pendingSave = nil end)
+    input:SetScript("OnTextChanged", function()
+        pendingSave = nil
+        Talents.pendingApply = nil
+        local details = Talents:DescribeCode(input:GetText())
+        if details then
+            Talents.buildSummary:SetText("Build: " ..
+                string.upper(details.class) .. " | " ..
+                string.upper(details.era) .. " | " ..
+                details.points .. " points | Role: " .. details.role)
+        else
+            Talents.buildSummary:SetText(
+                "Build: paste a valid NT1 code to see class, era and points.")
+        end
+    end)
     local function submit(action)
         local ok, reason = Talents:SendToTarget(action, input:GetText())
         Talents.status:SetText(reason)
@@ -389,7 +488,11 @@ function Talents:EnsureWindow()
     self.previewButton = button(importPage, "Preview", 22, 18, 110,
         function() submit("preview") end)
     self.applyButton = button(importPage, "Apply talents", 138, 18, 130,
-        function() submit("apply") end)
+        function()
+            local ok, result = Talents:RequestApplyConfirmation()
+            Talents.status:SetText(result)
+            message(result, not ok)
+        end)
     self.cancelButton = button(importPage, "Cancel", 274, 18, 104,
         function()
             input:ClearFocus()
@@ -428,19 +531,34 @@ function Talents:EnsureWindow()
         {1, 0.84, 0.42})
 
     -- Page 3 appears when Set Talents is opened from a bot's menu.
-    -- Website data is a pinned snapshot, not fetched over game chat.
-    styledLabel(presetPage, "WEBSITE TALENT PRESETS  |  Choose a build to review.",
-        22, -21, 610)
+    -- Website data is pinned; filters only affect display, not commands.
+    styledLabel(presetPage, "WEBSITE TALENT PRESETS  |  Select a build.",
+        22, -18, 610)
     self.presetRows = {}
     self.presetPageIndex = 1
+    self.presetFilter = "All"
+    self.presetFilterButtons = {}
+    for i, kind in ipairs({"All", "Raid", "Solo"}) do
+        local filter = kind
+        local b = CreateFrame("Button", nil, presetPage, "UIPanelButtonTemplate")
+        b:SetSize(106, 23)
+        b:SetPoint("TOPLEFT", presetPage, "TOPLEFT", 22+(i-1)*113, -43)
+        b:SetScript("OnClick", function()
+            Talents.presetFilter = filter
+            Talents.presetPageIndex = 1
+            Talents.selectedPreset = nil
+            Talents:UpdatePresetPage()
+        end)
+        self.presetFilterButtons[kind] = b
+    end
     for i=1,5 do
         local slot=i
         local row = CreateFrame("Button", nil, presetPage, "UIPanelButtonTemplate")
         row:SetSize(610, 31)
-        row:SetPoint("TOPLEFT", presetPage, "TOPLEFT", 24, -60-(i-1)*40)
+        row:SetPoint("TOPLEFT", presetPage, "TOPLEFT", 24, -82-(i-1)*37)
         row:SetText("")
         row:SetScript("OnClick", function()
-            local list = Talents:ListWebsitePresets(Talents.presetClass)
+            local list = Talents:ListFilteredWebsitePresets(Talents.presetClass)
             local entry = list[(Talents.presetPageIndex-1)*5+slot]
             if not entry then return end
             Talents.selectedPreset = entry
@@ -456,6 +574,7 @@ function Talents:EnsureWindow()
     self.showPage = function(page)
         pendingSave = nil
         Talents.pendingDelete = nil
+        Talents.pendingApply = nil
         Talents.page = page
         importPage:Hide()
         savedPage:Hide()
@@ -552,7 +671,7 @@ function Talents:EnsureWindow()
         end)
     self.nextPresetPage = button(presetPage, "Next >", 502, 55, 132,
         function()
-            local count=#Talents:ListWebsitePresets(Talents.presetClass)
+            local count=#Talents:ListFilteredWebsitePresets(Talents.presetClass)
             if Talents.presetPageIndex < math.max(1,math.ceil(count/5)) then
                 Talents.presetPageIndex=Talents.presetPageIndex+1
             end
@@ -580,7 +699,9 @@ function Talents:EnsureWindow()
     self.cancelPresetButton = button(presetPage, "Cancel", 404, 17, 120,
         function() window:Hide() end)
 
-    input:SetScript("OnEnterPressed", function() submit("apply") end)
+    input:SetScript("OnEnterPressed", function()
+        input:ClearFocus() -- Enter must never mutate a bot or send Apply.
+    end)
     input:SetScript("OnEscapePressed", function()
         input:ClearFocus()
         window:Hide()
@@ -632,8 +753,12 @@ end
 
 function Talents:UpdatePresetPage()
     if not self.presetRows then return end
-    local list=self:ListWebsitePresets(self.presetClass)
+    local list=self:ListFilteredWebsitePresets(self.presetClass)
     local maxPages=math.max(1,math.ceil(#list/5))
+    for name, b in pairs(self.presetFilterButtons or {}) do
+        b:SetText((name == (self.presetFilter or "All") and "[ " ..
+            name .. " ]") or name)
+    end
     if self.presetPageIndex>maxPages then self.presetPageIndex=maxPages end
     for i,row in ipairs(self.presetRows) do
         local entry=list[(self.presetPageIndex-1)*5+i]
@@ -669,6 +794,7 @@ function Talents:OpenWebsitePresetsForBot(bot, className, originalSpecsCallback)
     self.originalSpecsCallback=originalSpecsCallback
     self.selectedPreset=nil
     self.presetPageIndex=1
+    self.presetFilter="All"
     self.boundTarget=nil
     local current=getTarget()
     if current and string.lower(current.name)==
@@ -690,6 +816,7 @@ function Talents:Open()
     self.boundTarget = target
     self.requestedBot = target.name
     self.originalSpecsCallback = nil
+    self.selectedPreset = nil
     self.presetClass = nil -- Never inherit an earlier roster class.
     local window = self:EnsureWindow()
     self.targetLabel:SetText("Bot: " .. target.name ..

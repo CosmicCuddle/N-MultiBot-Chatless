@@ -51,6 +51,14 @@ Source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea948d77488e9b934c8
 | README.md | new user instructions, source notes and risks |
 | ROADMAP.md | this permanent maintainer handover |
 
+### Client safeguards and browsing improvements — staged on PR #5 (11 October 2026)
+
+- Apply is now **two deliberate clicks**: button then WoW StaticPopup with bot name, class, expansion and spent points. Pressing Enter in the NT1 field only ends editing. Confirm-time preflight rechecks the live bot target/GUID, code, class and chat limit. Changed/closed dialogs abort without a server mutation. Preview is unchanged/read-only.
+- Page 1 includes a locally decoded class / era / points / known website role summary. This is an information display only, **not** server validation or evidence of usable points/ranks.
+- Page 3 includes All / Raid / Solo filters; each change resets selection and pagination. Existing original Bot specs fallback remains intact; Warrior, Warlock and Death Knight stay excluded from website presets.
+- New Lua mock regression checks for Enter safety, confirmation cancel/changed target/changed code, valid confirmation and Mage filter counts. These controls are unverified in WoW; all server permissions still apply. Test at enlarged UI scale and after /reload.
+- **Next:** Add user-controlled Saved Builds text backup/import with strict parsing and non-destructive conflict handling, then verify workflows. Do not merge/release pending actual WoW client acceptance.
+
 ### Additional scope clarification — Death Knight exclusion (11 October 2026)
 
 - Project owner explicitly requested Death Knight be excluded from the website-based NT1 talent preset browser for now, alongside Warrior and Warlock. This affects **only the website preset option**, not the original Playerbot Bot specs functionality or the standalone manual NT1 import. Paladin remains unsupported due to absent verified converted website data.
