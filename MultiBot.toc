@@ -96,6 +96,7 @@ UI\MultiBotQuestsMenu.lua
 UI\MultiBotMinimap.lua
 UI\MultiBotGroupActionsUI.lua
 UI\MultiBotConsumablesUI.lua
+Data\NT1WebsitePresets.lua
 UI\MultiBotNT1TalentsUI.lua
 UI\MultiBotAttackUI.lua
 UI\MultiBotLeftCoreUI.lua
