@@ -16,7 +16,7 @@ Repository: https://github.com/CosmicCuddle/N-MultiBot-Chatless
 Merged feature branch: feature/nt1-saved-builds-pages; [PR #4](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/4)  
 Status: merged as main commit 178a4c0f0070695eeb493d16aca7bb5c4b7a93cf; [main test/package run 38128866892](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128866892) passed. Main lint passed. No player screenshots/relog verification yet; no standalone stable release or collection update.  
 Baseline for rollback: MultiBot 4.0.3 from main.  
-Next immediate task: **Page 1 Save code -> Page 2 Saved Builds browse/load round-trip** for a new, unique test build (do not Apply). The owner has already confirmed in real WoW screenshots that Mage Ruby Solo lists 4 (Arcane, Fire, Frost, Frost v2) and Warlock Hakua Raid lists 2 (Affliction, Demonology) and Solo lists 3 (Affliction, Demonology, Destruction). All filter, one-click code loading for newly added rows, original Bot specs fallback, and persistence still need separate testing. After save/load, test /reload/relog, overwrite/delete safety, NMB1 backup/import and pagination before starting the agreed native Wrath UI makeover. Earlier secure auto-target and second-click confirmation + Cancel were owner-tested on older code `ed9e591`, not independently retested after the latest catalogue update. Maintain MultiBot/WTF backups; draft [PR #5](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/5) unmerged; N Addon Collection v2.0.0 unchanged.
+Next immediate task: **Saved Builds persistence**: with the owner's newly saved test build, use `/reload` in WoW, reopen NT1 Saved Builds, verify its name and NT1 code are unchanged; then fully logout/relog and verify again (optionally on another character on the same account). The owner confirmed in-game that the Page 1 **Save code → Page 2 select → Load to import** round-trip works. Afterwards, inspect five-per-page navigation, two-click overwrite/delete, Page 4 NMB1 backup/export/import and original Bot specs fallback; complete functional testing before the agreed native Wrath UI makeover. Mage Ruby Solo (4), Warlock Hakua Raid (2) and Solo (3) were visibly verified in screenshots; All filters and newly added row load commands remain unverified. Previous secure auto-target and second-click confirmation+Cancel were player-tested on earlier code `ed9e591` and not retested after catalogue update. Preserve MultiBot and account WTF backups, do not invoke experimental Apply. Keep draft [PR #5](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/5) unmerged; public N Addon Collection v2.0.0 unchanged.
 
 ### Requirements and implemented design
 
@@ -50,6 +50,12 @@ Original pinned source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea9
 | .github/workflows/nt1-playerbot-talents.yml | Lua syntax/tests, website snapshot and bundle artifact |
 | README.md | new user instructions, source notes and risks |
 | ROADMAP.md | this permanent maintainer handover |
+
+### 11 October 2026 — in-game confirmation: Saved Builds round-trip
+
+- **Owner confirmed:** the previously requested Page 1 Save As / Save code, Page 2 Saved Builds browse/select and Load to import **all work correctly in their WoW 3.3.5a client**. This completes the tested basic Saved Builds round-trip on draft PR #5 after importing a website preset. No new addon source code changes are needed for this milestone.
+- **Remaining unverified separately:** SavedVariables survival after `/reload`, full logout/login and another same-account character; pagination after 5+ saved builds; Save overwrite confirmation, Delete confirmation; NMB1 export/import/restore, font/layout refinement. User's general confirmation does not prove those additional scenarios, and should not be over-reported as such.
+- **Next test:** keep the existing test build as-is, issue `/reload`, reopen Saved Builds, verify the same saved name and talent code are still present and load correctly. Then test full relog. Make an account `WTF` SavedVariables backup before overwrite/deletion or import tests. Do not Apply talents, merge draft PR #5 or modify N Addon Collection v2.0.0.
 
 ### 11 October 2026 — in-game confirmation: added Mage/Warlock preset displays
 
