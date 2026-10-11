@@ -16,7 +16,7 @@ Repository: https://github.com/CosmicCuddle/N-MultiBot-Chatless
 Merged feature branch: feature/nt1-saved-builds-pages; [PR #4](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/4)  
 Status: merged as main commit 178a4c0f0070695eeb493d16aca7bb5c4b7a93cf; [main test/package run 38128866892](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128866892) passed. Main lint passed. No player screenshots/relog verification yet; no standalone stable release or collection update.  
 Baseline for rollback: MultiBot 4.0.3 from main.  
-Next immediate task: download the main-branch artifact multibot-nt1-talents-test from [Actions 38128866892](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128866892), back up MultiBot and WTF SavedVariables, test Import Page 1/Saved Builds Page 2/website Set Talents Page 3 at the player's UI scale, check full relog persistence and send screenshots. CI is not proof of real game appearance.
+Next immediate task: inspect and in-game test draft [PR #5](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/5) using the test ZIP from [Actions 38132825282](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38132825282) (artifact `multibot-nt1-talents-test` ID `11699343446`). Back up the existing MultiBot directory and account WTF SavedVariables before replacing. Test Page 1 Import and Apply confirmation, Page 2 Saved Builds, Page 3 website filters, Page 4 backup/import, original Bot specs fallback, enlarged UI layout and relog persistence. CI is not proof of real game appearance. Do not merge or publish before owner acceptance.
 
 ### Requirements and implemented design
 
@@ -50,6 +50,13 @@ Source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea948d77488e9b934c8
 | .github/workflows/nt1-playerbot-talents.yml | Lua syntax/tests, website snapshot and bundle artifact |
 | README.md | new user instructions, source notes and risks |
 | ROADMAP.md | this permanent maintainer handover |
+
+### Latest validation checkpoint — PR #5 (11 October 2026)
+
+- Latest follow-up commit `4d6d5586900811ab4c70723154466c157ac77950` passes [Lua 5.1 NT1/visibility/consumables regressions and test ZIP packaging, run 38132825282](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38132825282), [Lua lint 38132825309](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38132825309), and [Lua format 38132825322](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38132825322). Artifact `multibot-nt1-talents-test` (ID `11699343446`) is the current test package.
+- New automated tests cover two-stage Apply confirmation, Enter-not-Apply, target and code mutation rejection, local points/class/era summaries, website All/Raid/Solo filters, portable backup round-trip, collision confirmation, and missing/truncated backup END marker.
+- Automated coverage does **not** verify game-client visuals, manual text selection, scrolling, actual clipboard behavior, WTF persistence after logout/relog, Playerbot interaction, or server-side talent application. Keep `AccessMode=0` during first GUI tests, and no actual Apply without a verified characters database and disposable bot backup. PR #5 remains draft/unmerged.
+- No changes made to Naxxramas Core's C++/SQL/DBC, mod-playerbots, original spec bridge, or public N Addon Collection v2.0.0. Exact next tasks are the real client tests above, screenshot/error collection, and server-integration reconciliation only after a verified backend handover.
 
 ### CI correction — portable import regression (11 October 2026)
 
