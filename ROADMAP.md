@@ -51,6 +51,10 @@ Source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea948d77488e9b934c8
 | README.md | new user instructions, source notes and risks |
 | ROADMAP.md | this permanent maintainer handover |
 
+### CI correction — portable import regression (11 October 2026)
+
+- First new export/import CI run [38132623813](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38132623813) failed at an **incorrect test fixture**: the older test had already deleted `Restoration Test`, so it could not appear in the later export. The backup regression now uses the retained `Vanilla Fire` build and its actual saved code. This fixes test assumptions, not live client behavior. Re-run CI before acceptance.
+
 ### Client safeguards and browsing improvements — staged on PR #5 (11 October 2026)
 
 - Apply is now **two deliberate clicks**: button then WoW StaticPopup with bot name, class, expansion and spent points. Pressing Enter in the NT1 field only ends editing. Confirm-time preflight rechecks the live bot target/GUID, code, class and chat limit. Changed/closed dialogs abort without a server mutation. Preview is unchanged/read-only.

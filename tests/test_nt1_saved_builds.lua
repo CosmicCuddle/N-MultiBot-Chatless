@@ -263,7 +263,7 @@ assert(#commands==0)
 -- format rejection and UI controls must remain entirely client-side.
 local backup, backupErr=again:ExportSavedBuilds()
 assert(backup and not backupErr and backup:find("^NMB1\n") and
-    backup:find("Restoration Test",1,true))
+    backup:find("Vanilla Fire",1,true))
 local originalStore=_G.MultiBotNT1SavedBuilds
 _G.MultiBotNT1SavedBuilds={}
 assert(not again:ImportSavedBuilds("NMB1\nFake|not-a-build\n"))
@@ -273,12 +273,12 @@ assert(#again:ListSavedBuilds()==0,
     "Malformed import must never partially change saved data")
 assert(again:ImportSavedBuilds(backup))
 assert(#again:ListSavedBuilds()==10,"Restored expected 10 named builds")
-assert(again:GetSavedCode("Restoration Test")==shaman)
-assert(not again:ImportSavedBuilds("NMB1\nRestoration Test|NT1:vanilla:mage:3g-1\n"))
-assert(again:GetSavedCode("Restoration Test")==shaman,
+assert(again:GetSavedCode("Vanilla Fire")==mage2)
+assert(not again:ImportSavedBuilds("NMB1\nVanilla Fire|NT1:vanilla:mage:3g-1\n"))
+assert(again:GetSavedCode("Vanilla Fire")==mage2,
     "Existing conflicting name must stay unchanged before confirmation")
-assert(again:ImportSavedBuilds("NMB1\nRestoration Test|NT1:vanilla:mage:3g-1\n",true))
-assert(again:GetSavedCode("Restoration Test")==mage)
+assert(again:ImportSavedBuilds("NMB1\nVanilla Fire|NT1:vanilla:mage:3g-1\n",true))
+assert(again:GetSavedCode("Vanilla Fire")==mage)
 _G.MultiBotNT1SavedBuilds=originalStore
 assert(again:Open())
 click(again.savedButton)
@@ -287,12 +287,12 @@ assert(again.page==4 and again.backupPage.visible and again.backupText.multiline
 click(again.exportButton)
 assert(again.backupText.text:find("^NMB1\n") and
     again.backupText.highlighted and #commands==0)
-again.backupText:SetText("NMB1\nRestoration Test|NT1:vanilla:mage:3g-1\n")
+again.backupText:SetText("NMB1\nVanilla Fire|NT1:vanilla:mage:3g-1\n")
 click(again.importButton)
 assert(again.backupStatus.text:find("Confirm overwrite:",1,true) and
-    again:GetSavedCode("Restoration Test")==shaman and #commands==0)
+    again:GetSavedCode("Vanilla Fire")==shaman and #commands==0)
 click(again.importButton)
-assert(again:GetSavedCode("Restoration Test")==mage and #commands==0)
+assert(again:GetSavedCode("Vanilla Fire")==mage and #commands==0)
 click(again.backFromBackup)
 assert(again.page==2 and again.savedPage.visible and #commands==0)
 print("NT1 account-wide saved builds, website filters and backup/import: all checks passed")
