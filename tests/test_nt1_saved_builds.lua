@@ -333,7 +333,7 @@ assert(again.presetFilter=="Raid" and
     again.presetCounter.text:find("(1 builds)",1,true))
 click(again.presetFilterButtons.Solo)
 assert(again.presetFilter=="Solo" and
-    again.presetCounter.text:find("(2 builds)",1,true))
+    again.presetCounter.text:find("(4 builds)",1,true))
 click(again.presetFilterButtons.All)
 assert(again.presetFilter=="All" and #commands==0)
 assert(again.presetClass=="mage" and again.requestedBot=="Zevon")
