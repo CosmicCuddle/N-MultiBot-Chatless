@@ -421,7 +421,7 @@ local function suppressNextTalentUsageLines(botName)
     }
 end
 
-function Spec:RequestList(bot, wrapper)
+function Spec:RequestBotSpecList(bot, wrapper)
     if self.busy then
         return                  --    on ignore le clic
     end
@@ -462,6 +462,30 @@ function Spec:RequestList(bot, wrapper)
     if MultiBot.allowLegacyChatFallback == true then
         SendChatMessage("talents spec list", "WHISPER", nil, bot)
     end
+end
+
+
+-- Preserve the original bridge-driven bot-spec dropdown. The verified
+-- Naxxramas website presets are an additional class-specific entry view.
+-- Unsupported/unconverted classes retain their previous Set Talents action.
+function Spec:RequestList(bot, wrapper)
+    if self.busy then return end
+    local importer=MultiBot.NT1Talents
+    local class = wrapper and type(wrapper.getClass)=="function" and
+        wrapper:getClass() or nil
+    if importer and type(importer.OpenWebsitePresetsForBot)=="function" and
+        type(bot)=="string" and class then
+        local has=importer:ListWebsitePresets(class)
+        if #has>0 then
+            self:HideDropdown()
+            local opened=importer:OpenWebsitePresetsForBot(
+                bot,class,function()
+                    Spec:RequestBotSpecList(bot,wrapper)
+                end)
+            if opened then return end
+        end
+    end
+    self:RequestBotSpecList(bot,wrapper)
 end
 
 
