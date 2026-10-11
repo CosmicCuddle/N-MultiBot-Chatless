@@ -14,7 +14,7 @@ This is the current handover for the Naxxramas fork. Also preserve docs/ROADMAP.
 
 Repository: https://github.com/CosmicCuddle/N-MultiBot-Chatless  
 Branch: feature/nt1-saved-builds-pages  
-Status: staged for automated Lua 5.1 and real-client review; no stable standalone or collection release.  
+Status: PR #4 test build passed Lua 5.1 and lint; client screenshots/relog tests pending; no stable standalone or collection release.  
 Baseline for rollback: MultiBot 4.0.3 from main.  
 Next immediate task: run all automated tests, then use standalone test ZIP to check Page 1, Page 2 and Set Talents in the 3.3.5a client.
 
@@ -57,7 +57,7 @@ Source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea948d77488e9b934c8
 - [x] Two-page import vs Saved Builds view and website class-specific preset browser implemented.
 - [x] Original Bot specs option and fallback kept for unsupported/unconverted classes.
 - [x] Snapshot of 40 confirmed converted Vanilla NT1 entries pinned, excluding Warrior/Warlock.
-- [ ] All Lua 5.1 syntax, saved-build/browser, legacy NT1, toolbar and consumables tests pass; repository-wide lint and formatting pass.
+- [x] Full Lua 5.1 syntax and saved-build/browser, legacy NT1, toolbar and consumables tests passed in [PR workflow 38128678572](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128678572); repository Lua lint passed in [38128678590](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128678590). Format workflow awaiting final result.
 - [ ] Main-branch workflow uploads install-ready multibot-nt1-talents-test package with MultiBot/ root, all libraries and Data/NT1WebsitePresets.lua.
 - [ ] Before installation, shut down WoW; back up Interface/AddOns/MultiBot and account WTF SavedVariables (especially MultiBot.lua and separate account data). Keep v4.0.3 for rollback.
 - [ ] Page 1: Save two codes under different names, test second-click overwrite and name/input field. Enter in name field must NOT Apply.
