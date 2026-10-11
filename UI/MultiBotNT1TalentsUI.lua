@@ -978,11 +978,11 @@ function Talents:EnsureWindow()
                     "Delete selected build? Click Delete again.")
                 return
             end
-            local _, why = Talents:DeleteBuild(chosen)
+            local ok = Talents:DeleteBuild(chosen)
             Talents.selectedName = nil
             Talents.pendingDelete = nil
             Talents:UpdateSavedPage()
-            Talents.savedStatus:SetText(why and "Build deleted." or
+            Talents.savedStatus:SetText(ok and "Build deleted." or
                 "Could not delete build.")
         end)
 

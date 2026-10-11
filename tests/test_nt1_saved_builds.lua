@@ -166,8 +166,9 @@ assert(api.savedStatus.position[5]==-18 and
     "Saved help, panel and first row must stay above footer at large font")
 assert(api.savedRows[1].categoryLabel.text=="MAGE" and
     api.savedRows[1].eraLabel.text=="VANILLA" and
-    api.savedRows[1].nameLabel.text=="PvE Mage",
-    "Saved rows must display class, era and build name separately")
+    api.selectedName=="PvE Mage" and
+    api.savedRows[1].nameLabel.text=="> PvE Mage",
+    "Saved rows show class, era, name and already-saved selection")
 click(api.savedRows[1])
 assert(api.selectedName=="PvE Mage" and #commands==0)
 assert(api.savedRows[1].nameLabel.text=="> PvE Mage" and
