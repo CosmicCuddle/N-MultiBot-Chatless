@@ -404,7 +404,7 @@ function Talents:EnsureWindow()
             Talents:UpdateSavedPage()
         end)
     self.backButton = button(savedPage, "< Import", 22, 17, 140,
-        function() Talents.showPage(1) end)
+        function() window.showPage(1) end)
     self.loadButton = button(savedPage, "Load to import", 176, 17, 166,
         function()
             local chosen = Talents.selectedName
@@ -415,7 +415,7 @@ function Talents:EnsureWindow()
             end
             input:SetText(code)
             nameBox:SetText(chosen)
-            Talents.showPage(1)
+            window.showPage(1)
             Talents.status:SetText("Loaded " .. chosen ..
                 ". Use Preview or Apply separately.")
             local era, class = code:match("^NT1:([a-z]+):([a-z]+):")
@@ -449,7 +449,7 @@ function Talents:EnsureWindow()
     self.savedButton = button(importPage, "Saved builds >", 390, 18, 240,
         function()
             Talents.savedPageIndex = 1
-            Talents.showPage(2)
+            window.showPage(2)
         end)
 
     input:SetScript("OnEnterPressed", function() submit("apply") end)
