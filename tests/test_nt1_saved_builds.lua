@@ -1,6 +1,6 @@
 -- Mock WoW 3.3.5a: persistent saved NT1 codes, page 1/page 2 and safety.
 MultiBot = {}
-MultiBotNT1SavedBuilds = nil
+_G.MultiBotNT1SavedBuilds = nil
 UISpecialFrames = {}
 local commands = {}
 local target = {name="Zevon", class="MAGE", guid="Player-Z"}
@@ -65,8 +65,8 @@ assert(not api:SaveBuild("Broken","junk"))
 assert(not api:SaveBuild("Name\nInjected",mage))
 assert(not api:SaveBuild(string.rep("x",41),mage))
 assert(api:SaveBuild("  Vanilla Fire  ",mage))
-assert(type(MultiBotNT1SavedBuilds)=="table" and
-    MultiBotNT1SavedBuilds["Vanilla Fire"]==mage)
+assert(type(_G.MultiBotNT1SavedBuilds)=="table" and
+    _G.MultiBotNT1SavedBuilds["Vanilla Fire"]==mage)
 assert(api:SaveBuild("vAnIlLa fIrE",mage) and #api:ListSavedBuilds()==1,
     "Case variants should not duplicate a saved name")
 assert(not api:SaveBuild("vanilla fire",mage2),
@@ -141,11 +141,11 @@ assert(api.savedPageIndex==2)
 assert(#commands==0,"Page 2 browsing must never submit commands")
 -- Simulate Lua UI reinitialization after reload; the account-wide store
 -- persists as a separate SavedVariables global.
-local store=MultiBotNT1SavedBuilds
+local store=_G.MultiBotNT1SavedBuilds
 MultiBot.NT1Talents=nil
 dofile("UI/MultiBotNT1TalentsUI.lua")
 local again=assert(MultiBot.NT1Talents)
-assert(MultiBotNT1SavedBuilds==store and #again:ListSavedBuilds()==11,
+assert(_G.MultiBotNT1SavedBuilds==store and #again:ListSavedBuilds()==11,
     "Simulated reload must keep named codes without migrating settings")
 assert(again:GetSavedCode("Restoration Test")==shaman)
 assert(not again:DeleteBuild("missing"))
