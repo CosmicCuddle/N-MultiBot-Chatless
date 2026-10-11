@@ -90,10 +90,15 @@ currentTarget={name="Testwarrior",guid="Player-01",class="WARRIOR"}
 assert(importer:Open(),"Selected bot must open the NT1 paste window")
 local popup=assert(importer.window)
 assert(popup.visible and importer.input.maxLetters==2048)
-assert(popup.width == 590 and popup.height == 348,
+assert(importer.importPage.visible and not importer.savedPage.visible,
+    "NT1 opens in Page 1 import by default")
+assert(importer.nameBox.maxLetters==40 and importer.savedButton and
+    importer.saveButton and importer.deleteButton and importer.loadButton,
+    "Two-page window requires all saved-code controls")
+assert(popup.width == 660 and popup.height == 465,
     "NT1 popup needs increased vertical room for large WoW UI fonts")
-assert(importer.input.position[5] == -189 and
-    importer.status.position[5] == -235 and
+assert(importer.input.position[5] == -106 and
+    importer.status.position[5] == -203 and
     importer.targetLabel.position[5] == -68,
     "NT1 fields must have independent rows without label overlap")
 assert(created[1].icon == "INV_Misc_Book_07",
