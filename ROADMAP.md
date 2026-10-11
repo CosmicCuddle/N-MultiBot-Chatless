@@ -16,7 +16,7 @@ Repository: https://github.com/CosmicCuddle/N-MultiBot-Chatless
 Merged feature branch: feature/nt1-saved-builds-pages; [PR #4](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/4)  
 Status: merged as main commit 178a4c0f0070695eeb493d16aca7bb5c4b7a93cf; [main test/package run 38128866892](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128866892) passed. Main lint passed. No player screenshots/relog verification yet; no standalone stable release or collection update.  
 Baseline for rollback: MultiBot 4.0.3 from main.  
-Next immediate task: build and in-game test draft [PR #5](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/5) with **54 owner-approved website presets**: 40 pinned + 7 Warrior + 5 Warlock + 2 Mage. **Owner already confirmed secure auto-targeting AND second-click confirmation with Cancel worked in game** on prior code `ed9e591`; do not assume that establishes this new build. Check Warlock All 5/Raid 2/Solo 3, Mage All 5/Raid 1/Solo 4, Warrior 7, class fallback and no auto-Apply. Then resume Page 1 Save code and Page 2 Saved Builds browse/load (start with one uniquely named test build, do not Apply). Then test five-entry pagination, overwrite/delete safety, relog persistence, Page 4 backups, original Bot specs and large-font layout. Still unverified: untargetable/out-of-range and combat fallback, server mutation and no-other-side-effects. Keep prior MultiBot/WTF backups, PR draft, and public N Addon Collection v2.0.0 unchanged. Do not merge or publish until owner acceptance.
+Next immediate task: **Page 1 Save code -> Page 2 Saved Builds browse/load round-trip** for a new, unique test build (do not Apply). The owner has already confirmed in real WoW screenshots that Mage Ruby Solo lists 4 (Arcane, Fire, Frost, Frost v2) and Warlock Hakua Raid lists 2 (Affliction, Demonology) and Solo lists 3 (Affliction, Demonology, Destruction). All filter, one-click code loading for newly added rows, original Bot specs fallback, and persistence still need separate testing. After save/load, test /reload/relog, overwrite/delete safety, NMB1 backup/import and pagination before starting the agreed native Wrath UI makeover. Earlier secure auto-target and second-click confirmation + Cancel were owner-tested on older code `ed9e591`, not independently retested after the latest catalogue update. Maintain MultiBot/WTF backups; draft [PR #5](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/5) unmerged; N Addon Collection v2.0.0 unchanged.
 
 ### Requirements and implemented design
 
@@ -50,6 +50,12 @@ Original pinned source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea9
 | .github/workflows/nt1-playerbot-talents.yml | Lua syntax/tests, website snapshot and bundle artifact |
 | README.md | new user instructions, source notes and risks |
 | ROADMAP.md | this permanent maintainer handover |
+
+### 11 October 2026 — in-game confirmation: added Mage/Warlock preset displays
+
+- **Screenshots received from the owner in WoW 3.3.5a:** Mage bot **Ruby** with **Solo** filter selected displays exactly **four** presets: Arcane, Fire, Frost and Frost v2. Warlock bot **Hakua** with **Raid** filter selected displays exactly **two** presets: Affliction and Demonology; with **Solo** selected displays exactly **three**: Affliction, Demonology and Destruction. Counts and descriptions visibly match the approved additions. This establishes the filtered list views rendered in-game, not just in Lua tests.
+- **Not yet shown:** the All-filter counts for these two bots, clicking/loading the newly added rows into Page 1, original Bot specs fallback, actual talent applications or Saved Builds persistence. Do not mark any of those tested until observed.
+- **Next:** complete one Page 1 Save code -> Page 2 Saved Builds browse/select -> Load to import round-trip using a uniquely named test build (no Apply). After that, verify /reload and relog persistence, overwrite/delete and NMB1 backup/import before the approved native Wrath UI polish. Preserve existing MultiBot + WTF backups. PR #5 remains draft; public N Addon Collection v2.0.0 unchanged.
 
 ### 11 October 2026 — completed website talent catalogue (owner-supplied)
 
