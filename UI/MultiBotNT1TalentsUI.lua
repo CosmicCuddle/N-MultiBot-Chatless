@@ -585,7 +585,7 @@ function Talents:EnsureWindow()
     end
     window:Hide()
     self.window = window
-    self.showPage(1)
+    window.showPage(1)
     return window
 end
 
@@ -686,7 +686,7 @@ function Talents:Open()
     self.nameBox:SetText("")
     self.selectedName = nil
     self.savedPageIndex = 1
-    self.showPage(1)
+    window.showPage(1)
     window:Show()
     self.input:SetFocus()
     return true
