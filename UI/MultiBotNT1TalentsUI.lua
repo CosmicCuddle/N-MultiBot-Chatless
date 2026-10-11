@@ -110,17 +110,17 @@ end
 
 -- These are account-wide addon SavedVariables, deliberately separate
 -- from MultiBotDB/AceDB profile settings and from N Talent Calculator saves.
--- WoW loads MultiBotNT1SavedBuilds before addon Lua and writes it on logout.
+-- WoW loads _G.MultiBotNT1SavedBuilds before addon Lua and writes it on logout.
 local MAX_SAVED_BUILDS = 100
 local MAX_BUILD_NAME = 40
 
 local function getSavedStore(create)
-    if type(MultiBotNT1SavedBuilds) == "table" then
-        return MultiBotNT1SavedBuilds
+    if type(_G.MultiBotNT1SavedBuilds) == "table" then
+        return _G.MultiBotNT1SavedBuilds
     end
     if create then
-        MultiBotNT1SavedBuilds = {}
-        return MultiBotNT1SavedBuilds
+        _G.MultiBotNT1SavedBuilds = {}
+        return _G.MultiBotNT1SavedBuilds
     end
     return nil
 end
@@ -153,7 +153,7 @@ function Talents:ListSavedBuilds()
         if type(name) == "string" and type(code) == "string" then
             local valid = self:ValidateCode(code)
             if valid then
-                local era, class = code:match("^NT1:([a-z]+):([a-z]+):")
+                local _, class = code:match("^NT1:([a-z]+):([a-z]+):")
                 result[#result+1] = {name=name, code=code,
                     era=era, class=class}
             end
@@ -518,7 +518,7 @@ function Talents:EnsureWindow()
                     chosen .. ".")
                 return
             end
-            local ok, why = Talents:DeleteBuild(chosen)
+            local _, why = Talents:DeleteBuild(chosen)
             Talents.selectedName = nil
             Talents.pendingDelete = nil
             Talents:UpdateSavedPage()
