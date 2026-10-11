@@ -3,12 +3,78 @@
 Repository: https://github.com/CosmicCuddle/N-MultiBot-Chatless  
 Client: World of Warcraft 3.3.5a (Interface 30300, Lua 5.1)  
 Current main commit: 7903afb2b3145dc27497f953f976a783fac7a11e (PR #3 merged); earlier PR #2 75a3cf4c96ff53f4189a9c33d1327095ea0763f2 and PR #1 e33e87954cb53e5c8cb21b694faae37653dea180  
-Current main source version: MultiBot 4.0.3 — reversed dungeon menu and read-only right-click help; test build pending live-client acceptance  
+Current main baseline: MultiBot 4.0.3; v4.0.4 Saved Builds and website presets staged on feature/nt1-saved-builds-pages (CI/game testing pending)  
 Last maintained: 10 October 2026 — dungeon list order and profile explanations  
 Public suite baseline: N Addon Collection v2.0.0, which still includes approved MultiBot 4.0  
 Author and credit lineage: Nico Löbbert, Wishmaster117/TheWarlock, CosmicCuddle
 
 This is the current handover for the Naxxramas fork. Also preserve docs/ROADMAP.md, which is the detailed historical upstream bridge-migration audit. That document includes older August 2026 baseline SHAs and should not be mistaken for the current Naxxramas fork version. Update this root file with every meaningful change, including the new exact next task.
+
+## Active feature: MultiBot 4.0.4 — NT1 Saved Builds and Website Presets
+
+Repository: https://github.com/CosmicCuddle/N-MultiBot-Chatless  
+Branch: feature/nt1-saved-builds-pages  
+Status: staged for automated Lua 5.1 and real-client review; no stable standalone or collection release.  
+Baseline for rollback: MultiBot 4.0.3 from main.  
+Next immediate task: run all automated tests, then use standalone test ZIP to check Page 1, Page 2 and Set Talents in the 3.3.5a client.
+
+### Requirements and implemented design
+
+- The existing NT1 Import stays Page 1. Paste code, choose a name, Save code. A changed existing code must be confirmed by clicking Save again. Save never applies to a bot.
+- Saved Builds > opens Page 2: alphabetical account-wide named NT1 builds, class/era labels, five entries per page, previous/next navigation, Load to import (returns to Page 1) and two-click Delete. None send a server command.
+- Separate account-wide SavedVariables table: MultiBotNT1SavedBuilds, declared in MultiBot.toc, independent of N Talent Calculator and existing MultiBot profiles. Previous builds are never migrated or deleted.
+- The original bot-roster Set Talents action offers read-only website presets as a third window view, filtered to the exact class of that roster bot. Raid/Solo, spec, role and variation are visible. Load to import moves the NT1 code to Page 1; it does not Apply.
+- Bot specs button on the website page keeps access to the previous bridge-driven Playerbots specialization selector. For classes without converted website records, Set Talents uses the old selector immediately.
+- From a bot roster, the user may not actually be targeting that character in-game. Applying is then locked until the user targets that bot and presses Confirm target. Wrong target or class cannot bypass validation.
+- Naxxramas Core remains the only authority for applying talents, talent/era/point restrictions, ownership and experimental rollback. No C++/SQL/DBC or Playerbots bridge changes.
+- Published N Addon Collection v2.0.0 remains unchanged and does not acquire the new calculator or MultiBot snapshot.
+
+### Exact source of the website presets
+
+Owner's site: https://cosmiccuddle.github.io/Naxxramas-Resource-Hub/  
+Repo: https://github.com/CosmicCuddle/Naxxramas-Resource-Hub  
+Source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea948d77488e9b934c8b66bbafe182948f. The current approved converted **Vanilla** records total exactly 40: Druid 9, Hunter 8, Mage 3, Priest 7, Rogue 6 and Shaman 7 (Raid and Solo variants). The two supplemental Rogue record links in naxx-talent-set-sync.js already occur in the full-sync dataset; do not double-count them.
+
+**Explicitly exclude Warrior and Warlock:** the website lists their sets as unfinished/TO BE CONVERTED. No verified Vanilla NT1 records for Paladin or Death Knight appear in the converted full-sync source. Keep their original bot spec list; do not fabricate presets. These are offline bundled website snapshots; WoW cannot fetch arbitrary web pages to update the list at runtime. Changes to the website require a deliberate source-pinned regeneration, a review and updated tests.
+
+### Files changed
+
+| Path | Responsibility |
+| --- | --- |
+| MultiBot.toc | 4.0.4 version, account-wide SavedVariables, website preset data load order |
+| Data/NT1WebsitePresets.lua | 40 exact converted website NT1 codes pinned to site commit |
+| UI/MultiBotNT1TalentsUI.lua | account-wide name/save/load/delete, two import/storage pages, website class page, explicit target re-confirmation, no auto apply |
+| UI/MultiBotSpecUI.lua | integrate website page into existing Set Talents menu while retaining Bot specs access |
+| tests/test_nt1_saved_builds.lua | names, overwrite/delete, persistence simulation, 40 class-filtered website records, pages and no server mutation |
+| tests/test_nt1_bot_talents.lua | prior target safety and command assertions adapted to larger page window |
+| .github/workflows/nt1-playerbot-talents.yml | Lua syntax/tests, website snapshot and bundle artifact |
+| README.md | new user instructions, source notes and risks |
+| ROADMAP.md | this permanent maintainer handover |
+
+### Acceptance checklist — exact next tests
+
+- [x] Account-wide saved NT1 storage and name collisions/overwrite/delete confirmation implemented.
+- [x] Two-page import vs Saved Builds view and website class-specific preset browser implemented.
+- [x] Original Bot specs option and fallback kept for unsupported/unconverted classes.
+- [x] Snapshot of 40 confirmed converted Vanilla NT1 entries pinned, excluding Warrior/Warlock.
+- [ ] All Lua 5.1 syntax, saved-build/browser, legacy NT1, toolbar and consumables tests pass; repository-wide lint and formatting pass.
+- [ ] Main-branch workflow uploads install-ready multibot-nt1-talents-test package with MultiBot/ root, all libraries and Data/NT1WebsitePresets.lua.
+- [ ] Before installation, shut down WoW; back up Interface/AddOns/MultiBot and account WTF SavedVariables (especially MultiBot.lua and separate account data). Keep v4.0.3 for rollback.
+- [ ] Page 1: Save two codes under different names, test second-click overwrite and name/input field. Enter in name field must NOT Apply.
+- [ ] Page 2: Browse names, five-per-page navigation, Load to import, two-click Delete. Confirm no server messages from browsing or saving.
+- [ ] /reload and relog: saved builds persist, including on a different character of the same account, without overwriting old MultiBot config.
+- [ ] Set Talents from a Mage's bot roster menu shows exactly 3 converted Raid/Solo website records. Compare Rogue, Hunter, Druid, Priest and Shaman counts; verify Warrior/Warlock, Paladin and Death Knight use previous spec menu.
+- [ ] Selecting a website preset only loads it; actual target mismatches must fail until correct bot targeted and Confirm target clicked.
+- [ ] Test website Browse > Bot specs access to original bridge functionality.
+- [ ] Review all three screens with user's enlarged UI font, no overlapping buttons/labels, good page spacing and no Lua errors.
+- [ ] Check previous 4.0.3 consumables right-click info and opt-in visibility buttons still work.
+- [ ] Do not execute experimental server Apply without verified characters DB and disposable bot backup. Previously observed 51-point success is not verification of all spell/rank/permanence behaviors.
+
+### Rollback and long-term maintenance
+
+The UI and offline preset codes do not require server recompilation or SQL/DBC changes. On client regression, close WoW and restore the original MultiBot folder. Existing WTF SavedVariables should be preserved; restoring an older WTF backup may erase newly named codes. Disabling server talent import prevents future applies but does not undo any previous actual bot talent mutation.
+
+Next after in-game UI acceptance: reconcile website data revisions and keep source SHA and group counts current; consider Raid/Solo filters or search if the preset list grows; handle full-length Wrath NT1 codes by a properly authorised server-side protocol (never truncate to fit chat); add Paladin/TBC/Wrath only once the website publishes verified converted records; separately validate Naxxramas Core importer ownership/persistence/rollback; import standalone MultiBot changes into a *new* collection version only with separate user approval.
 
 ## Current task — consumables menu and dungeon information (4.0.3)
 
