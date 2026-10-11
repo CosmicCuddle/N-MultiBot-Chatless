@@ -53,7 +53,7 @@ Source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea948d77488e9b934c8
 
 ### CI correction — portable import regression (11 October 2026)
 
-- First new export/import CI run [38132623813](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38132623813) failed at an **incorrect test fixture**: the older test had already deleted `Restoration Test`, so it could not appear in the later export. The backup regression now uses the retained `Vanilla Fire` build and its actual saved code. This fixes test assumptions, not live client behavior. Re-run CI before acceptance.
+- Initial export/import CI runs [38132623813](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38132623813) and [38132686895](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38132686895) failed at **test-fixture assumptions**, not syntax: the older regression had already deleted `Restoration Test`, and a subsequent assertion compared the remaining Mage named build to a Shaman code. The corrected test uses the retained `Vanilla Fire` build and its actual `mage2` code. The multi-line backup editor is explicitly anchored inside its scroll frame. Re-run CI before acceptance; no in-game tests are claimed.
 
 ### Client safeguards and browsing improvements — staged on PR #5 (11 October 2026)
 

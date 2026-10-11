@@ -290,7 +290,7 @@ assert(again.backupText.text:find("^NMB1\n") and
 again.backupText:SetText("NMB1\nVanilla Fire|NT1:vanilla:mage:3g-1\n")
 click(again.importButton)
 assert(again.backupStatus.text:find("Confirm overwrite:",1,true) and
-    again:GetSavedCode("Vanilla Fire")==shaman and #commands==0)
+    again:GetSavedCode("Vanilla Fire")==mage2 and #commands==0)
 click(again.importButton)
 assert(again:GetSavedCode("Vanilla Fire")==mage and #commands==0)
 click(again.backFromBackup)
