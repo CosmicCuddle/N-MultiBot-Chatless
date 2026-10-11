@@ -202,6 +202,33 @@ function Talents:OnTargetChanged()
     end
 end
 
+-- SecureActionButtonTemplate handles /targetexact under a real click, not
+-- insecure addon Lua. TargetByName was removed long before WoW 3.3.5a.
+-- Configure outside combat; never generate macro text from untrusted input.
+-- The addon verifies the resulting target before any Apply confirmation.
+function Talents:ConfigureApplyAutoTarget()
+    local name=self.requestedBot or
+        (self.boundTarget and self.boundTarget.name)
+    self.autoTargetReady=false
+    if type(InCombatLockdown)=="function" and InCombatLockdown() then
+        return false
+    end
+    if not self.applyButton or type(self.applyButton.SetAttribute)~="function" then
+        return false
+    end
+    local safe=type(name)=="string" and #name>=2 and #name<=12 and
+        name:match("^[A-Za-z]+$")
+    if safe then
+        self.applyButton:SetAttribute("macrotext1","/targetexact " .. name)
+        self.applyButton:SetAttribute("type1","macro")
+        self.autoTargetReady=true
+    else
+        self.applyButton:SetAttribute("type1",nil)
+        self.applyButton:SetAttribute("macrotext1",nil)
+    end
+    return self.autoTargetReady
+end
+
 function Talents:RequestApplyConfirmation()
     local matched,hint,guided=self:CheckIntendedTarget("apply")
     if not matched then return false,hint,guided end
@@ -499,12 +526,21 @@ local function styledLabel(parent, text, x, y, width, color)
     return label
 end
 
-local function button(parent, name, x, y, width, callback)
-    local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+local function button(parent, name, x, y, width, callback, secureTarget)
+    local template=secureTarget and
+        "SecureActionButtonTemplate,UIPanelButtonTemplate" or
+        "UIPanelButtonTemplate"
+    local b=CreateFrame("Button", nil, parent, template)
     b:SetSize(width, 25)
     b:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", x, y)
     b:SetText(name)
-    b:SetScript("OnClick", callback)
+    if secureTarget then
+        -- HookScript leaves Blizzard's protected targeting handler intact.
+        -- SetScript here would replace it, silently breaking the macro.
+        b:HookScript("OnClick", callback)
+    else
+        b:SetScript("OnClick", callback)
+    end
     return b
 end
 
@@ -658,9 +694,10 @@ function Talents:EnsureWindow()
         function()
             local ok,result,guided=Talents:RequestApplyConfirmation()
             Talents.status:SetText(result)
-            -- Expected target guidance is not a red UI error.
+            -- Targeting is a protected click action. The callback never
+            -- assumes the macro succeeded, and never sends Apply itself.
             if not guided then message(result,not ok) end
-        end)
+        end, true)
     self.cancelButton = button(importPage, "Cancel", 274, 18, 104,
         function()
             input:ClearFocus()
@@ -958,9 +995,13 @@ function Talents:EnsureWindow()
     end
     -- Target selection events update guidance, never dispatch server chat.
     window:RegisterEvent("PLAYER_TARGET_CHANGED")
+    window:RegisterEvent("PLAYER_REGEN_ENABLED")
     window:SetScript("OnEvent", function(_,event)
         if event=="PLAYER_TARGET_CHANGED" then
             Talents:OnTargetChanged()
+        elseif event=="PLAYER_REGEN_ENABLED" and
+            Talents.window and Talents.window:IsShown() then
+            Talents:ConfigureApplyAutoTarget()
         end
     end)
     window:Hide()
@@ -1041,8 +1082,8 @@ function Talents:LoadWebsitePreset(entry)
     self.input:SetText(code)
     self.nameBox:SetText(entry.name .. " " .. entry.category)
     self.showPage(1)
-    self.status:SetText("Build loaded. Target " ..
-        (self.requestedBot or "the bot") .. ", then Preview or Apply.")
+    self.status:SetText("Build loaded. Apply attempts to target " ..
+        (self.requestedBot or "the bot") .. " first.")
     return true
 end
 
@@ -1069,6 +1110,7 @@ function Talents:OpenWebsitePresetsForBot(bot, className, originalSpecsCallback)
         self.boundTarget=current
     end
     local win=self:EnsureWindow()
+    self:ConfigureApplyAutoTarget()
     self.targetLabel:SetText("Bot: "..self.requestedBot.." | Class: "..class)
     self.input:SetText("")
     self.nameBox:SetText("")
@@ -1088,6 +1130,7 @@ function Talents:Open()
     self.selectedPreset = nil
     self.presetClass = nil -- Never inherit an earlier roster class.
     local window = self:EnsureWindow()
+    self:ConfigureApplyAutoTarget()
     self.targetLabel:SetText("Bot: " .. target.name ..
         "  |  Class: " .. (target.class or "unknown"))
     self.status:SetText(

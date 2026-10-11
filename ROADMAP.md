@@ -51,6 +51,12 @@ Original pinned source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea9
 | README.md | new user instructions, source notes and risks |
 | ROADMAP.md | this permanent maintainer handover |
 
+### 11 October 2026 — protected one-click exact-name auto-target attempt
+
+- Owner confirmed the guided Arndor targeting flow works but requested **automatic targeting** on Apply. Confirmed from 3.3.5a reference sources that `TargetByName` was removed in patch 2.0.1, and insecure Lua must not call protected `TargetUnit` or unrestricted macros. Instead, the **user's hardware click** on Apply uses `SecureActionButtonTemplate` with the native `/targetexact <name>` macro before an ordinary `HookScript` callback independently validates target identity and asks for the existing Apply confirmation. The latter never issues Apply directly.
+- Macro only configured from strictly validated ASCII letter-only character names (2–12), never from pasted NT1 text or website labels. Update macro for every roster/direct-target window outside combat; disable when name cannot be safely represented. If the bot isn't locally targetable, combat prevents safe setup, or identity/class/GUID mismatches, retain the old guided/no-server-command fallback. Do not create a saved user macro, fake `TargetByName`, or issue `RunMacroText` directly from Lua.
+- Lua mocks now simulate Blizzard's protected click separately from the addon `HookScript`, including success/failure, wrong-class target, per-bot macro refresh, and zero server Apply until the player accepts the second confirmation. This **does not prove** secure-template behaviour on the user's exact WoW 3.3.5a client; check for taint/protected-action errors and window visibility, especially when switching roster bots or in combat. Retain addon/WTF backups and draft PR; N Addon Collection v2.0.0 and Mod-Naxxramas-Core unchanged.
+
 ### 11 October 2026 — guided roster-bot target selection
 
 - **Actual client report:** a Priest Raid website preset for bot **Arndor** was loaded while the game target was another character (**Karnok**); the addon displayed `Target changed. Reopen Talents for the correct bot.` in red, repeatedly. Roster menus do not require the player to already target that bot.

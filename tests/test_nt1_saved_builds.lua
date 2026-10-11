@@ -34,6 +34,32 @@ function Frame:RegisterEvent(event)
     self.registeredEvents=self.registeredEvents or {}
     self.registeredEvents[event]=true
 end
+function Frame:SetAttribute(name,value)
+    self.attributes=self.attributes or {}
+    self.attributes[name]=value
+end
+function Frame:HookScript(event,fn)
+    local prior=self.scripts[event]
+    self.scripts[event]=function(frame,...)
+        if prior then prior(frame,...) end
+        -- This is a mock of the native SecureActionButton OnClick:
+        -- if the test supplied a nearby named unit, target it before the
+        -- insecure hook. Never simulate /targetexact as ordinary addon Lua.
+        if frame.template and frame.template:find(
+            "SecureActionButtonTemplate",1,true) and
+            frame.attributes and frame.attributes.type1=="macro" then
+            local name=(frame.attributes.macrotext1 or ""):match(
+                "^/targetexact ([A-Za-z]+)$")
+            if name then
+                frame.lastSecureTarget=name
+                if frame.simulateSecureClick then
+                    frame:simulateSecureClick(name)
+                end
+            end
+        end
+        fn(frame,...)
+    end
+end
 function Frame:SetScript(k,fn) self.scripts[k]=fn end
 function Frame:Show() self.visible=true end
 function Frame:Hide() self.visible=false end
@@ -270,6 +296,9 @@ assert(again.presetFilter=="Solo" and
 click(again.presetFilterButtons.All)
 assert(again.presetFilter=="All" and #commands==0)
 assert(again.presetClass=="mage" and again.requestedBot=="Zevon")
+assert(again.applyButton.attributes.type1=="macro" and
+    again.applyButton.attributes.macrotext1=="/targetexact Zevon",
+    "Auto-target macro must be configured for the roster bot")
 assert(not again:LoadWebsitePreset(nil) and again.page==3,
     "Missing preset must not leave the browser")
 assert(not again:LoadWebsitePreset({
@@ -303,15 +332,43 @@ assert(again.status.text:find("Target Zevon",1,true) and
 -- Apply should guide toward the roster bot without dispatching commands
 -- or showing a red UI error. The target event may bind but never Apply.
 click(again.applyButton)
-assert(again.awaitingTarget and #commands==0 and
-    again.status.text:find("Target Zevon",1,true))
-assert(again.window.registeredEvents.PLAYER_TARGET_CHANGED)
+assert(again.applyButton.lastSecureTarget=="Zevon" and
+    again.awaitingTarget and #commands==0 and
+    again.status.text:find("Target Zevon",1,true),
+    "Failed /targetexact must fall back to guidance, never Apply")
+-- When the bot is actually nearby, the *secure* hardware click switches
+-- the target before the callback checks identity or opens a confirmation.
+again.applyButton.simulateSecureClick=function(_,name)
+    if name=="Zevon" then
+        target={name="Zevon",guid="Player-Z",class="MAGE"}
+    end
+end
+click(again.applyButton)
+assert(not again.awaitingTarget and again.boundTarget and
+    again.boundTarget.name=="Zevon" and again.pendingApply and
+    #commands==0, "Secure target + Apply requires separate confirmation")
+StaticPopupDialogs.MULTIBOT_NT1_APPLY_CONFIRM.OnCancel()
+assert(not again.pendingApply)
+again.applyButton.simulateSecureClick=nil
+target={name="Differentmage",guid="Player-O",class="MAGE"}
+click(again.applyButton)
+assert(again.awaitingTarget and not again.pendingApply and #commands==0)
+assert(again.window.registeredEvents.PLAYER_TARGET_CHANGED and
+    again.window.registeredEvents.PLAYER_REGEN_ENABLED)
 assert(not again.pendingApply)
 target={name="Zevon",guid="Player-S",class="SHAMAN"}
 again.window.scripts.OnEvent(again.window,"PLAYER_TARGET_CHANGED")
 assert(not again.boundTarget and #commands==0 and
     again.status.text:find("MAGE",1,true),
     "Matching name but wrong roster class must never verify")
+-- A protected macro cannot justify accepting a wrong class/GUID.
+again.applyButton.simulateSecureClick=function()
+    target={name="Zevon",guid="Player-S",class="SHAMAN"}
+end
+click(again.applyButton)
+assert(not again.pendingApply and #commands==0,
+    "Secure name target with wrong class must never prompt Apply")
+again.applyButton.simulateSecureClick=nil
 assert(#commands==0)
 target={name="Zevon",guid="Player-Z",class="MAGE"}
 again.window.scripts.OnEvent(again.window,"PLAYER_TARGET_CHANGED")
@@ -348,6 +405,8 @@ target={name="Valiant",guid="Player-W",class="WARRIOR"}
 assert(again:OpenWebsitePresetsForBot("Valiant","Warrior",function()
     warriorSpecsOpened=true
 end))
+assert(again.applyButton.attributes.macrotext1=="/targetexact Valiant",
+    "Opening another roster bot must refresh the secure target name")
 assert(again.page==3 and again.presetClass=="warrior" and
     again.presetCounter.text:find("Page 1 / 2",1,true) and
     again.presetCounter.text:find("(7 builds)",1,true) and #commands==0)

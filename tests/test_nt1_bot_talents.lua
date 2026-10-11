@@ -41,6 +41,32 @@ function Frame:RegisterEvent(event)
     self.registeredEvents=self.registeredEvents or {}
     self.registeredEvents[event]=true
 end
+function Frame:SetAttribute(name,value)
+    self.attributes=self.attributes or {}
+    self.attributes[name]=value
+end
+function Frame:HookScript(event,fn)
+    local prior=self.scripts[event]
+    self.scripts[event]=function(frame,...)
+        if prior then prior(frame,...) end
+        -- This is a mock of the native SecureActionButton OnClick:
+        -- if the test supplied a nearby named unit, target it before the
+        -- insecure hook. Never simulate /targetexact as ordinary addon Lua.
+        if frame.template and frame.template:find(
+            "SecureActionButtonTemplate",1,true) and
+            frame.attributes and frame.attributes.type1=="macro" then
+            local name=(frame.attributes.macrotext1 or ""):match(
+                "^/targetexact ([A-Za-z]+)$")
+            if name then
+                frame.lastSecureTarget=name
+                if frame.simulateSecureClick then
+                    frame:simulateSecureClick(name)
+                end
+            end
+        end
+        fn(frame,...)
+    end
+end
 function Frame:SetScript(event, callback) self.scripts[event]=callback end
 function Frame:Show() self.visible=true end
 function Frame:Hide() self.visible=false end
@@ -109,6 +135,12 @@ currentTarget={name="Actualplayer",guid="Player-99",class="WARRIOR"}
 assert(not importer:Open(),"Do not allow own player character as bot target")
 currentTarget={name="Testwarrior",guid="Player-01",class="WARRIOR"}
 assert(importer:Open(),"Selected bot must open the NT1 paste window")
+assert(importer.applyButton and
+    importer.applyButton.template:find("SecureActionButtonTemplate",1,true) and
+    importer.applyButton.attributes.type1=="macro" and
+    importer.applyButton.attributes.macrotext1=="/targetexact Testwarrior",
+    "Apply must use a secure exact-name targeting click")
+assert(type(importer.applyButton.scripts.OnClick)=="function")
 local popup=assert(importer.window)
 assert(popup.visible and importer.input.maxLetters==2048)
 assert(importer.importPage.visible and not importer.savedPage.visible,
@@ -167,7 +199,8 @@ local details=importer:DescribeCode(code)
 assert(details.class=="warrior" and details.era=="vanilla" and
     details.points==1 and details.role=="not specified")
 importer.applyButton.scripts.OnClick(importer.applyButton)
-assert(#commands==2 and activeConfirmation and
+assert(importer.applyButton.lastSecureTarget=="Testwarrior" and
+    #commands==2 and activeConfirmation and
     activeConfirmation.text:find("Testwarrior",1,true) and
     activeConfirmation.text:find("1 selected points",1,true),
     "Apply requires confirmation with target and build summary")
