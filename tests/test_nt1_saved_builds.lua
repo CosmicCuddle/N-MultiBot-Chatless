@@ -253,8 +253,10 @@ assert(again:OpenWebsitePresetsForBot("Zevon","Mage",function()
 end))
 assert(again.page==3 and again.presetPage.visible and
     not again.importPage.visible and #commands==0)
-assert(again.presetStatus.text=="Choose a preset. No talents changed.",
+assert(again.presetStatus.text=="Loading never applies talents.",
     "Preset help must be short at enlarged UI font scale")
+assert(not again.loadPresetButton,
+    "Website preset rows should load directly without a redundant button")
 click(again.presetFilterButtons.Raid)
 assert(again.presetFilter=="Raid" and
     again.presetCounter.text:find("(1 builds)",1,true))
@@ -264,12 +266,19 @@ assert(again.presetFilter=="Solo" and
 click(again.presetFilterButtons.All)
 assert(again.presetFilter=="All" and #commands==0)
 assert(again.presetClass=="mage" and again.requestedBot=="Zevon")
+assert(not again:LoadWebsitePreset(nil) and again.page==3,
+    "Missing preset must not leave the browser")
+assert(not again:LoadWebsitePreset({
+    class="warrior",code="NT1:vanilla:warrior:3g-1",name="Wrong Class",
+    category="Raid"
+}) and again.page==3,"Wrong-class preset must not load")
 click(again.presetRows[1])
 assert(again.selectedPreset and again.selectedPreset.class=="mage")
-assert(#commands==0,"Selecting preset must never send chat commands")
-click(again.loadPresetButton)
-assert(again.page==1 and again.input.text==preset[1].code)
-assert(#commands==0,"Loading a website preset must never apply it")
+assert(again.page==1 and again.importPage.visible and
+    not again.presetPage.visible and again.input.text==preset[1].code,
+    "One click must load the Mage preset directly into Import")
+assert(again.nameBox.text:find(preset[1].name,1,true))
+assert(#commands==0,"Clicking a preset never sends Preview or Apply")
 assert(again.boundTarget and again.boundTarget.name=="Zevon",
     "Matching selected target may be safely bound for later review")
 -- Bot menu may be used without that bot targeted. In that case, loading is
@@ -280,8 +289,8 @@ assert(again:OpenWebsitePresetsForBot("Zevon","mage",function()
 end))
 assert(again.boundTarget==nil and again.page==3)
 click(again.presetRows[1])
-click(again.loadPresetButton)
-assert(again.page==1 and again.input.text==preset[1].code)
+assert(again.page==1 and again.input.text==preset[1].code and #commands==0,
+    "Untargeted bot's website preset must load locally in one click")
 assert(not again:SendToTarget("apply",again.input.text))
 assert(#commands==0,"A menu-selected but untargeted bot must never receive apply")
 click(again.targetConfirm)
@@ -320,11 +329,15 @@ assert(again.presetPageIndex==1 and
     again.presetCounter.text:find("(4 builds)",1,true))
 click(again.presetFilterButtons.Solo)
 assert(again.presetCounter.text:find("(3 builds)",1,true))
+local selectedWarrior=again:ListFilteredWebsitePresets("warrior")[1].code
 click(again.presetRows[1])
 assert(again.selectedPreset and again.selectedPreset.class=="warrior")
-local selectedWarrior=again.selectedPreset.code
-click(again.loadPresetButton)
-assert(again.page==1 and again.input.text==selectedWarrior and #commands==0)
+assert(again.page==1 and again.input.text==selectedWarrior and
+    not again.presetPage.visible and #commands==0,
+    "Clicking a Solo Warrior preset must load immediately without Apply")
+assert(again:DescribeCode(again.input.text).role=="DPS" or
+    again:DescribeCode(again.input.text).role=="Tank",
+    "Chosen website role must be retained for local build summary")
 assert(again:OpenWebsitePresetsForBot("Valiant","Warrior",function()
     warriorSpecsOpened=true
 end))

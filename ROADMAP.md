@@ -23,7 +23,7 @@ Next immediate task: inspect and in-game test draft [PR #5](https://github.com/C
 - The existing NT1 Import stays Page 1. Paste code, choose a name, Save code. A changed existing code must be confirmed by clicking Save again. Save never applies to a bot.
 - Saved Builds > opens Page 2: alphabetical account-wide named NT1 builds, class/era labels, five entries per page, previous/next navigation, Load to import (returns to Page 1) and two-click Delete. None send a server command.
 - Separate account-wide SavedVariables table: MultiBotNT1SavedBuilds, declared in MultiBot.toc, independent of N Talent Calculator and existing MultiBot profiles. Previous builds are never migrated or deleted.
-- The original bot-roster Set Talents action offers read-only website presets as a third window view, filtered to the exact class of that roster bot. Raid/Solo, spec, role and variation are visible. Load to import moves the NT1 code to Page 1; it does not Apply.
+- The original bot-roster Set Talents action offers website presets as a third window view, filtered to the exact class of that roster bot. Raid/Solo, spec, role and variation are visible. Clicking any red website preset row **loads its NT1 code and name directly into Page 1** in a single click; no second Load button or server request. Preview and Apply remain separate actions.
 - Bot specs button on the website page keeps access to the previous bridge-driven Playerbots specialization selector. For classes without converted website records, Set Talents uses the old selector immediately.
 - From a bot roster, the user may not actually be targeting that character in-game. Applying is then locked until the user targets that bot and presses Confirm target. Wrong target or class cannot bypass validation.
 - Naxxramas Core remains the only authority for applying talents, talent/era/point restrictions, ownership and experimental rollback. No C++/SQL/DBC or Playerbots bridge changes.
@@ -50,6 +50,12 @@ Original pinned source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea9
 | .github/workflows/nt1-playerbot-talents.yml | Lua syntax/tests, website snapshot and bundle artifact |
 | README.md | new user instructions, source notes and risks |
 | ROADMAP.md | this permanent maintainer handover |
+
+### 11 October 2026 — single-click website preset loading
+
+- **Owner-requested UX:** clicking a red website preset row immediately loads that code and name into NT1 Import (Page 1). Remove the redundant website-page **Load to import** button; retain **Bot specs** and **Cancel**, with room for the larger in-game UI font. This is **local navigation only**, never a command dispatch or an automatic Apply. The separate Confirm target, Preview and two-stage Apply confirmation are unchanged.
+- All / Raid / Solo filters and five-per-page navigation remain. Preserve the selected preset metadata for the local role summary. Lua tests now require one-click Mage and Solo Warrior loading, reject an absent/wrong-class preset, verify the import page opens, and assert that zero server commands are emitted. Saved Builds Page 2 **Load to import** remains intentionally separate and unchanged.
+- **Still pending:** review CI at the latest development commit and test the new one-click interaction with Warrior Throgar in WoW 3.3.5a, including /reload, readability, original Bot specs fallback, and the absence of talent changes. PR #5 remains unmerged, and N Addon Collection v2.0.0 is untouched.
 
 ### 11 October 2026 — approved Warrior website presets
 

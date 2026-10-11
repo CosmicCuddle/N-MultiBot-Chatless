@@ -642,7 +642,7 @@ function Talents:EnsureWindow()
 
     -- Page 3 appears when Set Talents is opened from a bot's menu.
     -- Website data is pinned; filters only affect display, not commands.
-    styledLabel(presetPage, "Choose a build to review.",
+    styledLabel(presetPage, "Click a build to load it.",
         22, -18, 610)
     self.presetRows = {}
     self.presetPageIndex = 1
@@ -670,14 +670,13 @@ function Talents:EnsureWindow()
         row:SetScript("OnClick", function()
             local list = Talents:ListFilteredWebsitePresets(Talents.presetClass)
             local entry = list[(Talents.presetPageIndex-1)*5+slot]
-            if not entry then return end
-            Talents.selectedPreset = entry
-            Talents:UpdatePresetPage()
+            -- Direct load is local UI navigation only. No Preview or Apply.
+            Talents:LoadWebsitePreset(entry)
         end)
         self.presetRows[i]=row
     end
     self.presetStatus = styledLabel(presetPage,
-        "Choose a preset. No talents changed.", 22, -266, 610)
+        "Loading never applies talents.", 22, -266, 610)
     self.presetCounter = styledLabel(presetPage, "", 239, -302, 190,
         {1, 0.84, 0.42})
 
@@ -875,20 +874,9 @@ function Talents:EnsureWindow()
             window:Hide()
             if type(original) == "function" then original() end
         end)
-    self.loadPresetButton = button(presetPage, "Load to import", 167, 17, 210,
-        function()
-            local entry=Talents.selectedPreset
-            if not entry or entry.class ~= Talents.presetClass then
-                Talents.presetStatus:SetText("Select a class preset first.")
-                return
-            end
-            input:SetText(entry.code)
-            nameBox:SetText(entry.name .. " " .. entry.category)
-            Talents.showPage(1)
-            Talents.status:SetText("Website preset loaded. Confirm the targeted bot, " ..
-                "then Preview or Apply separately.")
-        end)
-    self.cancelPresetButton = button(presetPage, "Cancel", 404, 17, 120,
+    -- Each large red preset row loads directly. The second Load button
+    -- formerly here was redundant and made the user click twice.
+    self.cancelPresetButton = button(presetPage, "Cancel", 502, 17, 120,
         function() window:Hide() end)
 
     input:SetScript("OnEnterPressed", function()
@@ -955,13 +943,12 @@ function Talents:UpdatePresetPage()
     for i,row in ipairs(self.presetRows) do
         local entry=list[(self.presetPageIndex-1)*5+i]
         if entry then
-            local chosen=self.selectedPreset==entry and "> " or "  "
             local label=entry.category .. ": " .. entry.name ..
                 " (" .. entry.role .. ")"
             if (entry.variant or 1)>1 then
                 label=label .. " v" .. entry.variant
             end
-            row:SetText(chosen .. label)
+            row:SetText(label)
             row:Show()
         else
             row:Hide()
@@ -969,9 +956,26 @@ function Talents:UpdatePresetPage()
     end
     self.presetCounter:SetText("Page " .. self.presetPageIndex ..
         " / " .. maxPages .. "  (" .. #list .. " builds)")
-    self.presetStatus:SetText(self.selectedPreset and
-        ("Selected: " .. self.selectedPreset.name .. " — not applied") or
-        "Choose a preset. No talents changed.")
+    self.presetStatus:SetText("Loading never applies talents.")
+end
+
+-- Red website preset buttons jump straight to the read-only import editor.
+-- Target confirmation and all server actions remain separate operations.
+function Talents:LoadWebsitePreset(entry)
+    if type(entry)~="table" or entry.class~=self.presetClass then
+        return false, "Choose a preset for this bot's class."
+    end
+    local code, reason=self:ValidateCode(entry.code, self.presetClass)
+    if not code then return false, reason end
+    if not self.input or not self.nameBox or not self.showPage then
+        return false, "Talent import editor is unavailable."
+    end
+    self.selectedPreset=entry
+    self.input:SetText(code)
+    self.nameBox:SetText(entry.name .. " " .. entry.category)
+    self.showPage(1)
+    self.status:SetText("Build loaded. Confirm target, then Preview.")
+    return true
 end
 
 -- Open from the bot's existing "Set Talents" menu, not the current target.
