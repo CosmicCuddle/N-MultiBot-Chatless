@@ -86,7 +86,19 @@ jobs:
               assert 'MultiBot/MultiBot.toc' in included
               assert 'MultiBot/UI/MultiBotNT1TalentsUI.lua' in included
               assert 'MultiBot/Core/MultiBotInit.lua' in included
-          print(f'Built {out}')
+              assert 'MultiBot/Data/NT1WebsitePresets.lua' in included
+              assert 'MultiBot/UI/MultiBotSpecUI.lua' in included
+              # All .toc-referenced Lua/XML files must exist in the archive.
+              toc = Path('MultiBot.toc').read_text(encoding='utf-8')
+              referenced = [
+                  'MultiBot/' + line.strip().replace('\\', '/')
+                  for line in toc.splitlines()
+                  if line.strip() and not line.lstrip().startswith('#')
+              ]
+              missing = [item for item in referenced if item not in included]
+              assert not missing, f'Missing addon dependencies: {missing}'
+              assert not any(p.startswith('MultiBot/tests/') for p in included)
+          print(f'Built {out} with {len(referenced)} .toc dependencies')
           PY
 
       - name: Upload standalone MultiBot test artifact

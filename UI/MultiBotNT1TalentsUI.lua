@@ -358,6 +358,8 @@ function Talents:EnsureWindow()
     self.targetConfirm = button(importPage, "Confirm target", 469, 150, 157,
         function()
             local requested = Talents.requestedBot
+            -- Failed reconfirmation must never leave an old binding active.
+            Talents.boundTarget = nil
             local current, why = getTarget()
             if not current then
                 Talents.status:SetText(why)
@@ -366,6 +368,12 @@ function Talents:EnsureWindow()
             if requested and string.lower(current.name) ~=
                 string.lower(requested) then
                 Talents.status:SetText("Target " .. requested .. " before applying.")
+                return
+            end
+            -- A roster bot's class is part of the intended identity.
+            if Talents.presetClass and current.class ~= Talents.presetClass then
+                Talents.status:SetText("Target a " .. Talents.presetClass ..
+                    " bot before applying.")
                 return
             end
             Talents.boundTarget = current
@@ -678,6 +686,7 @@ function Talents:Open()
     self.boundTarget = target
     self.requestedBot = target.name
     self.originalSpecsCallback = nil
+    self.presetClass = nil -- Never inherit an earlier roster class.
     local window = self:EnsureWindow()
     self.targetLabel:SetText("Bot: " .. target.name ..
         "  |  Class: " .. (target.class or "unknown"))

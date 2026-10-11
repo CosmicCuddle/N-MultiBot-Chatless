@@ -2,7 +2,7 @@
 
 Repository: https://github.com/CosmicCuddle/N-MultiBot-Chatless  
 Client: World of Warcraft 3.3.5a (Interface 30300, Lua 5.1)  
-Current main commit: 178a4c0f0070695eeb493d16aca7bb5c4b7a93cf (PR #4 merged); previous PR #3 7903afb2b3145dc27497f953f976a783fac7a11e, PR #2 75a3cf4c96ff53f4189a9c33d1327095ea0763f2 and PR #1 e33e87954cb53e5c8cb21b694faae37653dea180  
+Current main commit: 7bc9baaf9e4f2e8f97c61ce475db2cdea6671dd5 (post-merge roadmap update; PR #4 merged at 178a4c0f0070695eeb493d16aca7bb5c4b7a93cf); previous PR #3 7903afb2b3145dc27497f953f976a783fac7a11e, PR #2 75a3cf4c96ff53f4189a9c33d1327095ea0763f2 and PR #1 e33e87954cb53e5c8cb21b694faae37653dea180  
 Current main version: MultiBot 4.0.4 — Saved Builds and website presets merged and main CI passed; live-client tests still pending  
 Last maintained: 11 October 2026 — account-wide NT1 saves and class-specific website presets  
 Public suite baseline: N Addon Collection v2.0.0, which still includes approved MultiBot 4.0  
@@ -51,6 +51,16 @@ Source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea948d77488e9b934c8
 | README.md | new user instructions, source notes and risks |
 | ROADMAP.md | this permanent maintainer handover |
 
+### Post-merge review and follow-up safeguards (11 October 2026)
+
+- Direct GitHub audit confirmed latest main 7bc9baa has successful NT1 package, Lua lint and Lua format workflows (38128977780 / 38128977853 / 38128977806). Prior PR #4 failures are superseded by these passing head results.
+- Compared Data/NT1WebsitePresets.lua to the pinned Resource Hub commit b77f25ea948d77488e9b934c8b66bbafe182948f: all 40 entry codes match exactly. The 40 records contain 39 unique codes (one intentional identical code appears in separate published variants); do not deduplicate the published choices.
+- Reviewed command size: longest bundled code 144 characters; current presets fit under 255 characters when combined with a normal bot name and command prefix.
+- Follow-up branch `fix/nt1-confirm-class-package-audit` hardens the roster **Confirm target** path to check both name and expected class, clears a failed target binding, and avoids carrying a stale preset class into direct NT1 import. Lua regression tests cover wrong-class confirmation and all bundled code lengths.
+- Follow-up packaging guard verifies the test ZIP includes the website presets, original spec UI, and every .toc referenced dependency. This follow-up is **not merged or in-game tested**. GitHub Actions status must be checked after its PR is opened.
+- No change to server code, SQL, DBC, mod-playerbots, original bridge spec apply, or published N Addon Collection v2.0.0.
+- **Next steps:** review the follow-up PR and its CI; do not merge without reviewing checks. Then install the approved standalone test artifact with backups, obtain screenshots of all 3 pages, test same-account /reload and full relog storage, and report actual in-client behavior. Server Apply stays experimental until database and disposable-bot rollback are prepared.
+
 ### Acceptance checklist — exact next tests
 
 - [x] Account-wide saved NT1 storage and name collisions/overwrite/delete confirmation implemented.
@@ -58,7 +68,7 @@ Source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea948d77488e9b934c8
 - [x] Original Bot specs option and fallback kept for unsupported/unconverted classes.
 - [x] Snapshot of 40 confirmed converted Vanilla NT1 entries pinned, excluding Warrior/Warlock.
 - [x] Main Lua 5.1 syntax, save/browser, NT1 targeting, toolbar and consumables tests passed in [38128866892](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128866892). PR Lua format passed in [38128788059](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128788059); main Lua lint passed in [38128866899](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128866899).
-- [ ] Main-branch workflow uploads install-ready multibot-nt1-talents-test package with MultiBot/ root, all libraries and Data/NT1WebsitePresets.lua.
+- [x] Latest main workflow [38128977780](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128977780) uploaded artifact multibot-nt1-talents-test (artifact 11698466588), source commit 7bc9baaf9e4f2e8f97c61ce475db2cdea6671dd5. Packaging/upload steps passed; manual archive extraction and in-game validation remain outstanding.
 - [ ] Before installation, shut down WoW; back up Interface/AddOns/MultiBot and account WTF SavedVariables (especially MultiBot.lua and separate account data). Keep v4.0.3 for rollback.
 - [ ] Page 1: Save two codes under different names, test second-click overwrite and name/input field. Enter in name field must NOT Apply.
 - [ ] Page 2: Browse names, five-per-page navigation, Load to import, two-click Delete. Confirm no server messages from browsing or saving.

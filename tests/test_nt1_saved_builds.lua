@@ -44,7 +44,10 @@ function UnitIsPlayer(w) return w=="target" and target ~= nil end
 function UnitIsUnit(w,o) return w=="target" and o=="player" and target and target.name=="Currentplayer" end
 function UnitName(w) return w=="target" and target and target.name end
 function UnitGUID(w) return w=="target" and target and target.guid end
-function UnitClass(w) return w=="target" and "Mage","MAGE" end
+function UnitClass(w)
+    local token = target and target.class or "MAGE"
+    return token, token
+end
 function SendChatMessage(s,channel)
     assert(channel=="SAY")
     commands[#commands+1]=s
@@ -163,6 +166,12 @@ assert(#again:ListWebsitePresets("warlock")==0)
 assert(#again:ListWebsitePresets("warrior")==0)
 assert(#again:ListWebsitePresets("deathknight")==0)
 assert(#again:ListWebsitePresets("paladin")==0)
+-- Every bundled preset must remain valid and fit the existing transport.
+for _,entry in ipairs(MultiBot.NT1WebsitePresets) do
+    assert(again:ValidateCode(entry.code,entry.class))
+    assert(#(".naxxbot talents preview Examplebot "..entry.code)<=255,
+        "Bundled website code cannot fit the supported SAY transport")
+end
 local preset=again:ListWebsitePresets("mage")
 assert(#preset==3 and preset[1].code:match("^NT1:vanilla:mage:"))
 local originalSpecsOpened=false
@@ -195,6 +204,12 @@ assert(#commands==0,"A menu-selected but untargeted bot must never receive apply
 click(again.targetConfirm)
 assert(again.status.text:find("Target Zevon",1,true) and
     again.boundTarget==nil)
+target={name="Zevon",guid="Player-S",class="SHAMAN"}
+click(again.targetConfirm)
+assert(not again.boundTarget and
+    again.status.text:find("mage",1,true),
+    "Matching name but wrong roster class must never verify")
+assert(#commands==0)
 target={name="Zevon",guid="Player-Z",class="MAGE"}
 click(again.targetConfirm)
 assert(again.boundTarget and again.boundTarget.name=="Zevon")
