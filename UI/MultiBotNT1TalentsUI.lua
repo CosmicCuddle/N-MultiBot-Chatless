@@ -210,7 +210,8 @@ function Talents:ConfigureApplyAutoTarget()
     local name=self.requestedBot or
         (self.boundTarget and self.boundTarget.name)
     self.autoTargetReady=false
-    if type(InCombatLockdown)=="function" and InCombatLockdown() then
+    if type(_G.InCombatLockdown)=="function" and
+        _G.InCombatLockdown() then
         return false
     end
     if not self.applyButton or type(self.applyButton.SetAttribute)~="function" then
