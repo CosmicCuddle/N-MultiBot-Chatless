@@ -228,7 +228,7 @@ function Talents:EnsureWindow()
     if self.window then return self.window end
     local window = CreateFrame("Frame", WINDOW_NAME, UIParent)
     window:SetWidth(660)
-    window:SetHeight(440)
+    window:SetHeight(465)
     window:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     window:SetFrameStrata("DIALOG")
     window:SetMovable(true)
@@ -257,10 +257,10 @@ function Talents:EnsureWindow()
         {1, 0.84, 0.42})
 
     local importPage = CreateFrame("Frame", nil, window)
-    importPage:SetSize(660, 340)
+    importPage:SetSize(660, 365)
     importPage:SetPoint("TOPLEFT", window, "TOPLEFT", 0, -85)
     local savedPage = CreateFrame("Frame", nil, window)
-    savedPage:SetSize(660, 340)
+    savedPage:SetSize(660, 365)
     savedPage:SetPoint("TOPLEFT", window, "TOPLEFT", 0, -85)
     self.importPage = importPage
     self.savedPage = savedPage
@@ -305,7 +305,7 @@ function Talents:EnsureWindow()
         return ok
     end
 
-    self.saveButton = button(importPage, "Save code", 469, 162, 157,
+    self.saveButton = button(importPage, "Save code", 469, 190, 157,
         function()
             local name, code = nameBox:GetText(), input:GetText()
             local trimmedName = trim(name)
@@ -359,13 +359,14 @@ function Talents:EnsureWindow()
             local entry = list[(Talents.savedPageIndex-1)*PAGE_SIZE + slot]
             if not entry then return end
             Talents.selectedName = entry.name
+            Talents.pendingDelete = nil
             Talents:UpdateSavedPage()
         end)
         self.savedRows[i] = rowButton
     end
     self.savedStatus = styledLabel(savedPage,
-        "Choose a build. Loading never applies it.", 22, -267, 610)
-    self.savedPageCounter = styledLabel(savedPage, "", 239, -299, 190,
+        "Choose a build. Loading never applies it.", 22, -266, 610)
+    self.savedPageCounter = styledLabel(savedPage, "", 239, -302, 190,
         {1, 0.84, 0.42})
 
     self.showPage = function(page)
@@ -386,14 +387,14 @@ function Talents:EnsureWindow()
         end
     end
 
-    self.previousSavedPage = button(savedPage, "< Previous", 24, 49, 119,
+    self.previousSavedPage = button(savedPage, "< Previous", 24, 55, 119,
         function()
             if Talents.savedPageIndex > 1 then
                 Talents.savedPageIndex = Talents.savedPageIndex - 1
             end
             Talents:UpdateSavedPage()
         end)
-    self.nextSavedPage = button(savedPage, "Next >", 502, 49, 132,
+    self.nextSavedPage = button(savedPage, "Next >", 502, 55, 132,
         function()
             local count = #Talents:ListSavedBuilds()
             local maxPages = math.max(1, math.ceil(count/PAGE_SIZE))
