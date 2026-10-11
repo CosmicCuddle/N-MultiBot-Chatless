@@ -153,7 +153,7 @@ function Talents:ListSavedBuilds()
         if type(name) == "string" and type(code) == "string" then
             local valid = self:ValidateCode(code)
             if valid then
-                local _, class = code:match("^NT1:([a-z]+):([a-z]+):")
+                local era, class = code:match("^NT1:([a-z]+):([a-z]+):")
                 result[#result+1] = {name=name, code=code,
                     era=era, class=class}
             end
@@ -483,7 +483,7 @@ function Talents:EnsureWindow()
             Talents:UpdateSavedPage()
         end)
     self.backButton = button(savedPage, "< Import", 22, 17, 140,
-        function() window.showPage(1) end)
+        function() Talents.showPage(1) end)
     self.loadButton = button(savedPage, "Load to import", 176, 17, 166,
         function()
             local chosen = Talents.selectedName
@@ -494,10 +494,10 @@ function Talents:EnsureWindow()
             end
             input:SetText(code)
             nameBox:SetText(chosen)
-            window.showPage(1)
+            Talents.showPage(1)
             Talents.status:SetText("Loaded " .. chosen ..
                 ". Use Preview or Apply separately.")
-            local era, class = code:match("^NT1:([a-z]+):([a-z]+):")
+            local _, class = code:match("^NT1:([a-z]+):([a-z]+):")
             if Talents.boundTarget and Talents.boundTarget.class and
                 class ~= Talents.boundTarget.class then
                 Talents.status:SetText("Loaded " .. class ..
@@ -528,7 +528,7 @@ function Talents:EnsureWindow()
     self.savedButton = button(importPage, "Saved builds >", 390, 18, 240,
         function()
             Talents.savedPageIndex = 1
-            window.showPage(2)
+            Talents.showPage(2)
         end)
 
     self.prevPresetPage = button(presetPage, "< Previous", 24, 55, 119,
@@ -561,7 +561,7 @@ function Talents:EnsureWindow()
             end
             input:SetText(entry.code)
             nameBox:SetText(entry.name .. " " .. entry.category)
-            window.showPage(1)
+            Talents.showPage(1)
             Talents.status:SetText("Website preset loaded. Confirm the targeted bot, " ..
                 "then Preview or Apply separately.")
         end)
@@ -585,7 +585,7 @@ function Talents:EnsureWindow()
     end
     window:Hide()
     self.window = window
-    window.showPage(1)
+    Talents.showPage(1)
     return window
 end
 
@@ -667,7 +667,7 @@ function Talents:OpenWebsitePresetsForBot(bot, className, originalSpecsCallback)
     self.targetLabel:SetText("Bot: "..self.requestedBot.." | Class: "..class)
     self.input:SetText("")
     self.nameBox:SetText("")
-    win.showPage(3)
+    Talents.showPage(3)
     win:Show()
     return true
 end
@@ -686,7 +686,7 @@ function Talents:Open()
     self.nameBox:SetText("")
     self.selectedName = nil
     self.savedPageIndex = 1
-    window.showPage(1)
+    Talents.showPage(1)
     window:Show()
     self.input:SetFocus()
     return true
