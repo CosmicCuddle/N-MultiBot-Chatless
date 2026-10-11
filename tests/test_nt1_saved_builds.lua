@@ -358,9 +358,10 @@ assert(again.window.registeredEvents.PLAYER_TARGET_CHANGED and
 assert(not again.pendingApply)
 target={name="Zevon",guid="Player-S",class="SHAMAN"}
 again.window.scripts.OnEvent(again.window,"PLAYER_TARGET_CHANGED")
-assert(not again.boundTarget and #commands==0 and
+assert(again.boundTarget and again.boundTarget.guid=="Player-Z" and
+    #commands==0 and not again.pendingApply and
     again.status.text:find("MAGE",1,true),
-    "Matching name but wrong roster class must never verify")
+    "Wrong-class target must not replace a previously verified bot GUID")
 -- A protected macro cannot justify accepting a wrong class/GUID.
 again.applyButton.simulateSecureClick=function()
     target={name="Zevon",guid="Player-S",class="SHAMAN"}
