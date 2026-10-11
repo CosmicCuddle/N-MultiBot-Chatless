@@ -2,9 +2,9 @@
 
 Repository: https://github.com/CosmicCuddle/N-MultiBot-Chatless  
 Client: World of Warcraft 3.3.5a (Interface 30300, Lua 5.1)  
-Current main commit: 7903afb2b3145dc27497f953f976a783fac7a11e (PR #3 merged); earlier PR #2 75a3cf4c96ff53f4189a9c33d1327095ea0763f2 and PR #1 e33e87954cb53e5c8cb21b694faae37653dea180  
-Current main baseline: MultiBot 4.0.3; v4.0.4 Saved Builds and website presets staged on feature/nt1-saved-builds-pages (CI/game testing pending)  
-Last maintained: 10 October 2026 — dungeon list order and profile explanations  
+Current main commit: 178a4c0f0070695eeb493d16aca7bb5c4b7a93cf (PR #4 merged); previous PR #3 7903afb2b3145dc27497f953f976a783fac7a11e, PR #2 75a3cf4c96ff53f4189a9c33d1327095ea0763f2 and PR #1 e33e87954cb53e5c8cb21b694faae37653dea180  
+Current main version: MultiBot 4.0.4 — Saved Builds and website presets merged and main CI passed; live-client tests still pending  
+Last maintained: 11 October 2026 — account-wide NT1 saves and class-specific website presets  
 Public suite baseline: N Addon Collection v2.0.0, which still includes approved MultiBot 4.0  
 Author and credit lineage: Nico Löbbert, Wishmaster117/TheWarlock, CosmicCuddle
 
@@ -13,10 +13,10 @@ This is the current handover for the Naxxramas fork. Also preserve docs/ROADMAP.
 ## Active feature: MultiBot 4.0.4 — NT1 Saved Builds and Website Presets
 
 Repository: https://github.com/CosmicCuddle/N-MultiBot-Chatless  
-Branch: feature/nt1-saved-builds-pages  
-Status: PR #4 test build passed Lua 5.1 and lint; client screenshots/relog tests pending; no stable standalone or collection release.  
+Merged feature branch: feature/nt1-saved-builds-pages; [PR #4](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/4)  
+Status: merged as main commit 178a4c0f0070695eeb493d16aca7bb5c4b7a93cf; [main test/package run 38128866892](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128866892) passed. Main lint passed. No player screenshots/relog verification yet; no standalone stable release or collection update.  
 Baseline for rollback: MultiBot 4.0.3 from main.  
-Next immediate task: run all automated tests, then use standalone test ZIP to check Page 1, Page 2 and Set Talents in the 3.3.5a client.
+Next immediate task: download the main-branch artifact multibot-nt1-talents-test from [Actions 38128866892](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128866892), back up MultiBot and WTF SavedVariables, test Import Page 1/Saved Builds Page 2/website Set Talents Page 3 at the player's UI scale, check full relog persistence and send screenshots. CI is not proof of real game appearance.
 
 ### Requirements and implemented design
 
@@ -57,7 +57,7 @@ Source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea948d77488e9b934c8
 - [x] Two-page import vs Saved Builds view and website class-specific preset browser implemented.
 - [x] Original Bot specs option and fallback kept for unsupported/unconverted classes.
 - [x] Snapshot of 40 confirmed converted Vanilla NT1 entries pinned, excluding Warrior/Warlock.
-- [x] Full Lua 5.1 syntax and saved-build/browser, legacy NT1, toolbar and consumables tests passed in [PR workflow 38128678572](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128678572); repository Lua lint passed in [38128678590](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128678590). Format workflow awaiting final result.
+- [x] Main Lua 5.1 syntax, save/browser, NT1 targeting, toolbar and consumables tests passed in [38128866892](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128866892). PR Lua format passed in [38128788059](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128788059); main Lua lint passed in [38128866899](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128866899).
 - [ ] Main-branch workflow uploads install-ready multibot-nt1-talents-test package with MultiBot/ root, all libraries and Data/NT1WebsitePresets.lua.
 - [ ] Before installation, shut down WoW; back up Interface/AddOns/MultiBot and account WTF SavedVariables (especially MultiBot.lua and separate account data). Keep v4.0.3 for rollback.
 - [ ] Page 1: Save two codes under different names, test second-click overwrite and name/input field. Enter in name field must NOT Apply.
