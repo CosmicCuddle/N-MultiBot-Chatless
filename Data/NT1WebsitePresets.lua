@@ -3,7 +3,8 @@
 -- Source: https://github.com/CosmicCuddle/Naxxramas-Resource-Hub
 -- File: assets/naxx-talent-sets-full-sync.js
 -- Source commit: b77f25ea948d77488e9b934c8b66bbafe182948f
--- Warrior and Warlock intentionally excluded as unfinished.
+-- Warrior and Warlock are unfinished; Death Knight is also excluded by
+-- explicit project decision. All three use the original Bot specs menu.
 -- Other classes without approved converted NT1 presets are not fabricated.
 if not MultiBot then return end
 MultiBot.NT1WebsitePresetSource = "b77f25ea948d77488e9b934c8b66bbafe182948f"

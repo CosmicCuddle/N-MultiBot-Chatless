@@ -155,8 +155,8 @@ assert(not again:DeleteBuild("missing"))
 assert(again:DeleteBuild("RESTORATION TEST"))
 assert(again:GetSavedCode("Restoration Test")==nil)
 assert(#commands==0)
--- Website presets are an immutable class-specific snapshot. Warrior and
--- Warlock are excluded, with the original bot spec menu retained.
+-- Website presets are an immutable class-specific snapshot. Warrior,
+-- Warlock and Death Knight are excluded; original bot specs remain usable.
 local counts={druid=9,hunter=8,mage=3,priest=7,rogue=6,shaman=7}
 for class,count in pairs(counts) do
     assert(#again:ListWebsitePresets(class)==count,
@@ -166,6 +166,20 @@ assert(#again:ListWebsitePresets("warlock")==0)
 assert(#again:ListWebsitePresets("warrior")==0)
 assert(#again:ListWebsitePresets("deathknight")==0)
 assert(#again:ListWebsitePresets("paladin")==0)
+-- Death Knight is explicitly excluded, not merely absent from this snapshot.
+-- Future accidental DK entries must never appear in the website preset UI.
+local originalPresetCount=#MultiBot.NT1WebsitePresets
+table.insert(MultiBot.NT1WebsitePresets,{
+    class="deathknight",category="Raid",name="Excluded DK Test",
+    role="Tank",variant=1,code="NT1:wotlk:deathknight:3g-1"
+})
+assert(#again:ListWebsitePresets("Death Knight")==0)
+assert(#again:ListWebsitePresets("DEATHKNIGHT")==0)
+assert(not again:OpenWebsitePresetsForBot(
+    "ExampleDK","Death Knight",function() end))
+assert(#commands==0)
+table.remove(MultiBot.NT1WebsitePresets)
+assert(#MultiBot.NT1WebsitePresets==originalPresetCount)
 -- Every bundled preset must remain valid and fit the existing transport.
 for _,entry in ipairs(MultiBot.NT1WebsitePresets) do
     assert(again:ValidateCode(entry.code,entry.class))

@@ -172,7 +172,11 @@ end
 function Talents:ListWebsitePresets(className)
     local class = type(className)=="string" and
         className:lower():gsub("[^a-z]", "") or ""
-    if class=="warrior" or class=="warlock" then return {} end
+    -- Explicit hold: these classes must use the original Bot specs menu,
+    -- even if a future website snapshot accidentally includes their codes.
+    if class=="warrior" or class=="warlock" or class=="deathknight" then
+        return {}
+    end
     local result = {}
     for _,entry in ipairs(MultiBot.NT1WebsitePresets or {}) do
         if entry.class==class and self:ValidateCode(entry.code, class) then
