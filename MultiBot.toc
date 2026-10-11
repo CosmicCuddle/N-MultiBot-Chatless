@@ -1,16 +1,16 @@
 ## Interface: 30300
-## Version: 4.0.3
+## Version: 4.0.4
 ## Title: MultiBot
 ## Notes: User Interface for Playerbot
 ## Author: Nico Löbbert
 ## SavedVariablesPerCharacter: MultiBotSave, MultiBotDB, MultiBotSaved
-## SavedVariables: MultiBotGlobalSave
+## SavedVariables: MultiBotGlobalSave, MultiBotNT1SavedBuilds
 ## X-Maintainer: Wishmaster117 aka TheWarlock
 ## X-Contributors: Wishmaster117 aka TheWarlock
 ## X-ForkMaintainer: CosmicCuddle
 ## X-ForkProjectURL: https://github.com/CosmicCuddle/MultiBot-Chatless-Naxxramas
 ## X-ForkChanges: Naxxramas consumables and NT1 talent import with opt-in main-bar visibility
-## X-ForkModified: 2026-10-10
+## X-ForkModified: 2026-10-11
 ## X-Contact: plexalexdcnh@gmail.com
 ## X-ProjectURL: https://github.com/Wishmaster117/MultiBot-Standalone
 
@@ -96,6 +96,7 @@ UI\MultiBotQuestsMenu.lua
 UI\MultiBotMinimap.lua
 UI\MultiBotGroupActionsUI.lua
 UI\MultiBotConsumablesUI.lua
+Data\NT1WebsitePresets.lua
 UI\MultiBotNT1TalentsUI.lua
 UI\MultiBotAttackUI.lua
 UI\MultiBotLeftCoreUI.lua
