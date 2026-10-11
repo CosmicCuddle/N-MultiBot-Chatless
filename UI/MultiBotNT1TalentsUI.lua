@@ -167,6 +167,28 @@ function Talents:ListSavedBuilds()
     return result
 end
 
+-- Pinned website presets are read-only and always class-filtered.
+-- No runtime HTTP or out-of-game file access is possible in 3.3.5a.
+function Talents:ListWebsitePresets(className)
+    local class = type(className)=="string" and
+        className:lower():gsub("[^a-z]", "") or ""
+    if class=="warrior" or class=="warlock" then return {} end
+    local result = {}
+    for _,entry in ipairs(MultiBot.NT1WebsitePresets or {}) do
+        if entry.class==class and self:ValidateCode(entry.code, class) then
+            result[#result+1]=entry
+        end
+    end
+    table.sort(result, function(a,b)
+        if a.category ~= b.category then
+            return a.category == "Raid"
+        end
+        if a.name~=b.name then return a.name<b.name end
+        return a.variant<b.variant
+    end)
+    return result
+end
+
 function Talents:GetSavedCode(name)
     local clean = validName(name)
     if not clean then return nil end
@@ -264,6 +286,11 @@ function Talents:EnsureWindow()
     savedPage:SetPoint("TOPLEFT", window, "TOPLEFT", 0, -85)
     self.importPage = importPage
     self.savedPage = savedPage
+    local presetPage = CreateFrame("Frame", nil, window)
+    presetPage:SetSize(660, 365)
+    presetPage:SetPoint("TOPLEFT", window, "TOPLEFT", 0, -85)
+    self.presetPage = presetPage
+
 
     styledLabel(importPage, "Paste an NT1 code from N Talent Calculator or the website.",
         22, -23, 610)
@@ -328,6 +355,25 @@ function Talents:EnsureWindow()
             if ok then Talents.selectedName = trimmedName end
         end)
 
+    self.targetConfirm = button(importPage, "Confirm target", 469, 150, 157,
+        function()
+            local requested = Talents.requestedBot
+            local current, why = getTarget()
+            if not current then
+                Talents.status:SetText(why)
+                return
+            end
+            if requested and string.lower(current.name) ~=
+                string.lower(requested) then
+                Talents.status:SetText("Target " .. requested .. " before applying.")
+                return
+            end
+            Talents.boundTarget = current
+            Talents.targetLabel:SetText("Bot: " .. current.name ..
+                "  |  Class: " .. (current.class or "unknown"))
+            Talents.status:SetText("Target verified. Preview before Apply.")
+        end)
+
     self.previewButton = button(importPage, "Preview", 22, 18, 110,
         function() submit("preview") end)
     self.applyButton = button(importPage, "Apply talents", 138, 18, 130,
@@ -369,19 +415,52 @@ function Talents:EnsureWindow()
     self.savedPageCounter = styledLabel(savedPage, "", 239, -302, 190,
         {1, 0.84, 0.42})
 
+    -- Page 3 appears when Set Talents is opened from a bot's menu.
+    -- Website data is a pinned snapshot, not fetched over game chat.
+    styledLabel(presetPage, "WEBSITE TALENT PRESETS  |  Choose a build to review.",
+        22, -21, 610)
+    self.presetRows = {}
+    self.presetPageIndex = 1
+    for i=1,5 do
+        local slot=i
+        local row = CreateFrame("Button", nil, presetPage, "UIPanelButtonTemplate")
+        row:SetSize(610, 31)
+        row:SetPoint("TOPLEFT", presetPage, "TOPLEFT", 24, -60-(i-1)*40)
+        row:SetText("")
+        row:SetScript("OnClick", function()
+            local list = Talents:ListWebsitePresets(Talents.presetClass)
+            local entry = list[(Talents.presetPageIndex-1)*5+slot]
+            if not entry then return end
+            Talents.selectedPreset = entry
+            Talents:UpdatePresetPage()
+        end)
+        self.presetRows[i]=row
+    end
+    self.presetStatus = styledLabel(presetPage,
+        "Select a class preset; nothing is applied yet.", 22, -266, 610)
+    self.presetCounter = styledLabel(presetPage, "", 239, -302, 190,
+        {1, 0.84, 0.42})
+
     self.showPage = function(page)
         pendingSave = nil
         Talents.pendingDelete = nil
         Talents.page = page
+        importPage:Hide()
+        savedPage:Hide()
+        presetPage:Hide()
         if page == 2 then
-            importPage:Hide()
             savedPage:Show()
             Talents.title:SetText("SAVED TALENT BUILDS")
             input:ClearFocus()
             nameBox:ClearFocus()
             Talents:UpdateSavedPage()
+        elseif page == 3 then
+            presetPage:Show()
+            Talents.title:SetText("WEBSITE CLASS PRESETS")
+            input:ClearFocus()
+            nameBox:ClearFocus()
+            Talents:UpdatePresetPage()
         else
-            savedPage:Hide()
             importPage:Show()
             Talents.title:SetText("NT1 TALENT IMPORT")
         end
@@ -452,6 +531,43 @@ function Talents:EnsureWindow()
             window.showPage(2)
         end)
 
+    self.prevPresetPage = button(presetPage, "< Previous", 24, 55, 119,
+        function()
+            if Talents.presetPageIndex>1 then
+                Talents.presetPageIndex=Talents.presetPageIndex-1
+            end
+            Talents:UpdatePresetPage()
+        end)
+    self.nextPresetPage = button(presetPage, "Next >", 502, 55, 132,
+        function()
+            local count=#Talents:ListWebsitePresets(Talents.presetClass)
+            if Talents.presetPageIndex < math.max(1,math.ceil(count/5)) then
+                Talents.presetPageIndex=Talents.presetPageIndex+1
+            end
+            Talents:UpdatePresetPage()
+        end)
+    self.originalSpecButton = button(presetPage, "Bot specs", 22, 17, 128,
+        function()
+            local original = Talents.originalSpecsCallback
+            window:Hide()
+            if type(original) == "function" then original() end
+        end)
+    self.loadPresetButton = button(presetPage, "Load to import", 167, 17, 210,
+        function()
+            local entry=Talents.selectedPreset
+            if not entry or entry.class ~= Talents.presetClass then
+                Talents.presetStatus:SetText("Select a class preset first.")
+                return
+            end
+            input:SetText(entry.code)
+            nameBox:SetText(entry.name .. " " .. entry.category)
+            window.showPage(1)
+            Talents.status:SetText("Website preset loaded. Confirm the targeted bot, " ..
+                "then Preview or Apply separately.")
+        end)
+    self.cancelPresetButton = button(presetPage, "Cancel", 404, 17, 120,
+        function() window:Hide() end)
+
     input:SetScript("OnEnterPressed", function() submit("apply") end)
     input:SetScript("OnEscapePressed", function()
         input:ClearFocus()
@@ -502,10 +618,66 @@ function Talents:UpdateSavedPage()
         "Choose a build. Loading never applies it.")
 end
 
+function Talents:UpdatePresetPage()
+    if not self.presetRows then return end
+    local list=self:ListWebsitePresets(self.presetClass)
+    local maxPages=math.max(1,math.ceil(#list/5))
+    if self.presetPageIndex>maxPages then self.presetPageIndex=maxPages end
+    for i,row in ipairs(self.presetRows) do
+        local entry=list[(self.presetPageIndex-1)*5+i]
+        if entry then
+            local chosen=self.selectedPreset==entry and "> " or "  "
+            local label=entry.category .. " | " .. entry.name ..
+                " | " .. entry.role
+            if (entry.variant or 1)>1 then
+                label=label .. " (variant " .. entry.variant .. ")"
+            end
+            row:SetText(chosen .. label)
+            row:Show()
+        else
+            row:Hide()
+        end
+    end
+    self.presetCounter:SetText("Page " .. self.presetPageIndex ..
+        " / " .. maxPages .. "  (" .. #list .. " builds)")
+    self.presetStatus:SetText(self.selectedPreset and
+        ("Selected: " .. self.selectedPreset.name .. " (not applied)") or
+        "Select a class preset; nothing is applied yet.")
+end
+
+-- Open from the bot's existing "Set Talents" menu, not the current target.
+-- Actual apply is deliberately locked until Confirm target matches the bot.
+function Talents:OpenWebsitePresetsForBot(bot, className, originalSpecsCallback)
+    local class=type(className)=="string" and
+        className:lower():gsub("[^a-z]", "") or ""
+    if #self:ListWebsitePresets(class)==0 then return false end
+    if type(bot)~="string" or bot=="" then return false end
+    self.requestedBot=bot:match("^[^-]+") or bot
+    self.presetClass=class
+    self.originalSpecsCallback=originalSpecsCallback
+    self.selectedPreset=nil
+    self.presetPageIndex=1
+    self.boundTarget=nil
+    local current=getTarget()
+    if current and string.lower(current.name)==
+        string.lower(self.requestedBot) and current.class==class then
+        self.boundTarget=current
+    end
+    local win=self:EnsureWindow()
+    self.targetLabel:SetText("Bot: "..self.requestedBot.." | Class: "..class)
+    self.input:SetText("")
+    self.nameBox:SetText("")
+    win.showPage(3)
+    win:Show()
+    return true
+end
+
 function Talents:Open()
     local target, reason = getTarget()
     if not target then message(reason, true); return false end
     self.boundTarget = target
+    self.requestedBot = target.name
+    self.originalSpecsCallback = nil
     local window = self:EnsureWindow()
     self.targetLabel:SetText("Bot: " .. target.name ..
         "  |  Class: " .. (target.class or "unknown"))
