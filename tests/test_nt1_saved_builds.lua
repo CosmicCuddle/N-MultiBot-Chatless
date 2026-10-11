@@ -324,6 +324,17 @@ assert(again.pendingApply and #commands==0)
 StaticPopupDialogs.MULTIBOT_NT1_APPLY_CONFIRM.OnCancel()
 assert(not again.pendingApply and #commands==0,
     "Cancelling Apply confirmation must not dispatch")
+-- Changing target while the second confirmation is open aborts it.
+click(again.applyButton)
+assert(again.pendingApply and #commands==0)
+local staleAccept=StaticPopupDialogs.MULTIBOT_NT1_APPLY_CONFIRM.OnAccept
+target={name="Differentmage",guid="Player-Other",class="MAGE"}
+again.window.scripts.OnEvent(again.window,"PLAYER_TARGET_CHANGED")
+assert(not again.pendingApply and #commands==0,
+    "Target changes must invalidate an outstanding confirmation")
+staleAccept()
+assert(#commands==0,"Stale Apply dialog may never dispatch")
+target={name="Zevon",guid="Player-Z",class="MAGE"}
 assert(again:OpenWebsitePresetsForBot("Zevon","mage",function()
     originalSpecsOpened=true
 end))

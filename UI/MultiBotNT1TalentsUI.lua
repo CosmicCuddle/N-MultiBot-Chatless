@@ -149,9 +149,9 @@ function Talents:CheckIntendedTarget(action)
         string.lower(expectedName) then
         self.awaitingTarget=true
         self.awaitingAction=action or "apply"
-        return false, "Target " .. expectedName .. " in game, then click " ..
+        return false, "Target " .. expectedName .. ", then click " ..
             (self.awaitingAction=="preview" and "Preview." or
-                "Apply talents."), true
+                "Apply."), true
     end
     if not CLASSES[current.class] or
         (self.presetClass and current.class~=self.presetClass) then
@@ -184,8 +184,8 @@ function Talents:OnTargetChanged()
     if self.pendingApply then
         -- Invalidate a confirmation as soon as target selection changes.
         self.pendingApply=nil
-        if type(StaticPopup_Hide)=="function" then
-            StaticPopup_Hide(APPLY_CONFIRM_KEY)
+        if type(_G.StaticPopup_Hide)=="function" then
+            _G.StaticPopup_Hide(APPLY_CONFIRM_KEY)
         end
         if self.status then
             self.status:SetText("Target changed. Click Apply again.")
