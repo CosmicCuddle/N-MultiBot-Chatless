@@ -263,21 +263,26 @@ assert(#commands==0)
 -- format rejection and UI controls must remain entirely client-side.
 local backup, backupErr=again:ExportSavedBuilds()
 assert(backup and not backupErr and backup:find("^NMB1\n") and
-    backup:find("Vanilla Fire",1,true))
+    backup:find("Vanilla Fire",1,true) and
+    backup:find("END|10",1,true))
 local originalStore=_G.MultiBotNT1SavedBuilds
 _G.MultiBotNT1SavedBuilds={}
-assert(not again:ImportSavedBuilds("NMB1\nFake|not-a-build\n"))
+assert(not again:ImportSavedBuilds("NMB1\nFake|not-a-build\nEND|1\n"))
+assert(not again:ImportSavedBuilds(
+    "NMB1\nValid|NT1:vanilla:mage:3g-1\n"))
+assert(not again:ImportSavedBuilds(
+    "NMB1\nValid|NT1:vanilla:mage:3g-1\nEND|2\n"))
 assert(not again:ImportSavedBuilds("NMB1\nGood|NT1:vanilla:mage:3g-1\n" ..
-    "Good|NT1:vanilla:mage:3g-2\n"))
+    "Good|NT1:vanilla:mage:3g-2\nEND|2\n"))
 assert(#again:ListSavedBuilds()==0,
     "Malformed import must never partially change saved data")
 assert(again:ImportSavedBuilds(backup))
 assert(#again:ListSavedBuilds()==10,"Restored expected 10 named builds")
 assert(again:GetSavedCode("Vanilla Fire")==mage2)
-assert(not again:ImportSavedBuilds("NMB1\nVanilla Fire|NT1:vanilla:mage:3g-1\n"))
+assert(not again:ImportSavedBuilds("NMB1\nVanilla Fire|NT1:vanilla:mage:3g-1\nEND|1\n"))
 assert(again:GetSavedCode("Vanilla Fire")==mage2,
     "Existing conflicting name must stay unchanged before confirmation")
-assert(again:ImportSavedBuilds("NMB1\nVanilla Fire|NT1:vanilla:mage:3g-1\n",true))
+assert(again:ImportSavedBuilds("NMB1\nVanilla Fire|NT1:vanilla:mage:3g-1\nEND|1\n",true))
 assert(again:GetSavedCode("Vanilla Fire")==mage)
 _G.MultiBotNT1SavedBuilds=originalStore
 assert(again:Open())
@@ -287,7 +292,7 @@ assert(again.page==4 and again.backupPage.visible and again.backupText.multiline
 click(again.exportButton)
 assert(again.backupText.text:find("^NMB1\n") and
     again.backupText.highlighted and #commands==0)
-again.backupText:SetText("NMB1\nVanilla Fire|NT1:vanilla:mage:3g-1\n")
+again.backupText:SetText("NMB1\nVanilla Fire|NT1:vanilla:mage:3g-1\nEND|1\n")
 click(again.importButton)
 assert(again.backupStatus.text:find("Confirm overwrite:",1,true) and
     again:GetSavedCode("Vanilla Fire")==mage2 and #commands==0)

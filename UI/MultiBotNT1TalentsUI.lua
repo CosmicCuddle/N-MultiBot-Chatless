@@ -319,6 +319,7 @@ function Talents:ExportSavedBuilds()
         end
         rows[#rows+1] = entry.name .. "|" .. entry.code .. "\n"
     end
+    rows[#rows+1] = "END|" .. #saved .. "\n"
     local exported = table.concat(rows)
     if #exported > BACKUP_LIMIT then
         return nil, "Backup exceeds 30 KB. Back up WTF SavedVariables instead."
@@ -339,8 +340,18 @@ function Talents:ImportSavedBuilds(text, allowOverwrite)
         body:find("\n\n",1,true) or body:find("\r",1,true) then
         return false, "Empty or malformed backup. No changes."
     end
-    local records, seen = {}, {}
+    local lines = {}
     for line in body:gmatch("([^\n]+)") do
+        lines[#lines+1] = line
+    end
+    local declared = lines[#lines] and
+        lines[#lines]:match("^END|([0-9]+)$")
+    if not declared or tonumber(declared) ~= #lines-1 then
+        return false, "Incomplete backup or missing END count. No changes."
+    end
+    lines[#lines] = nil
+    local records, seen = {}, {}
+    for _, line in ipairs(lines) do
         local rawName, code = line:match("^([^|]+)|([^|]+)$")
         local name = rawName and validName(rawName)
         if not name or name ~= rawName or not code or
