@@ -147,7 +147,7 @@ function Talents:RequestApplyConfirmation()
     self.pendingApply = {command=plan.command, code=plan.code}
     local expected = self.pendingApply -- Old/stale popup callbacks fail closed.
     StaticPopupDialogs[APPLY_CONFIRM_KEY] = {
-        text="Apply experimental bot talents?\n%s\n\nNo server Apply-ready check yet. Server may reject.",
+        text="Apply build to %s?\nExperimental: server may reject.",
         button1="Apply talents", button2="Cancel", timeout=0,
         whileDead=1, hideOnEscape=1, preferredIndex=3,
         OnAccept=function()
@@ -641,7 +641,7 @@ function Talents:EnsureWindow()
 
     -- Page 3 appears when Set Talents is opened from a bot's menu.
     -- Website data is pinned; filters only affect display, not commands.
-    styledLabel(presetPage, "WEBSITE TALENT PRESETS  |  Select a build.",
+    styledLabel(presetPage, "Choose a build to review.",
         22, -18, 610)
     self.presetRows = {}
     self.presetPageIndex = 1
@@ -676,7 +676,7 @@ function Talents:EnsureWindow()
         self.presetRows[i]=row
     end
     self.presetStatus = styledLabel(presetPage,
-        "Select a class preset; nothing is applied yet.", 22, -266, 610)
+        "Choose a preset. No talents changed.", 22, -266, 610)
     self.presetCounter = styledLabel(presetPage, "", 239, -302, 190,
         {1, 0.84, 0.42})
 
@@ -684,9 +684,12 @@ function Talents:EnsureWindow()
     styledLabel(backupPage, "BACKUP SAVED BUILDS  |  Plain-text NMB1 format",
         22, -18, 610)
     styledLabel(backupPage,
-        "Export: Ctrl+A, Ctrl+C. To import, paste an NMB1 backup below.",
+        "Export to copy, or paste an NMB1 backup to import.",
         22, -48, 610)
-    local backupScroll = CreateFrame("ScrollFrame", nil, backupPage,
+    -- The Wrath 3.3.5a UIPanelScrollFrameTemplate OnLoad concatenates
+    -- self:GetName() with "ScrollBar". An anonymous frame causes a Lua error.
+    local backupScroll = CreateFrame("ScrollFrame",
+        "MultiBotNT1BackupScrollFrame", backupPage,
         "UIPanelScrollFrameTemplate")
     backupScroll:SetPoint("TOPLEFT", backupPage, "TOPLEFT", 28, -81)
     backupScroll:SetSize(590, 206)
@@ -708,7 +711,7 @@ function Talents:EnsureWindow()
         end
     end)
     self.backupStatus = styledLabel(backupPage,
-        "No account data will be replaced without confirmation.",
+        "Import checks all builds; changes need confirmation.",
         22, -301, 610)
 
     self.showPage = function(page)
@@ -935,8 +938,8 @@ function Talents:UpdateSavedPage()
     self.savedPageCounter:SetText("Page " .. self.savedPageIndex ..
         " / " .. maxPages .. "  (" .. #list .. " builds)")
     self.savedStatus:SetText(self.selectedName and
-        ("Selected: " .. self.selectedName .. " (not applied)") or
-        "Choose a build. Loading never applies it.")
+        ("Selected: " .. self.selectedName .. " — not applied") or
+        "Select a saved build to load.")
 end
 
 function Talents:UpdatePresetPage()
@@ -952,10 +955,10 @@ function Talents:UpdatePresetPage()
         local entry=list[(self.presetPageIndex-1)*5+i]
         if entry then
             local chosen=self.selectedPreset==entry and "> " or "  "
-            local label=entry.category .. " | " .. entry.name ..
-                " | " .. entry.role
+            local label=entry.category .. ": " .. entry.name ..
+                " (" .. entry.role .. ")"
             if (entry.variant or 1)>1 then
-                label=label .. " (variant " .. entry.variant .. ")"
+                label=label .. " v" .. entry.variant
             end
             row:SetText(chosen .. label)
             row:Show()
@@ -966,8 +969,8 @@ function Talents:UpdatePresetPage()
     self.presetCounter:SetText("Page " .. self.presetPageIndex ..
         " / " .. maxPages .. "  (" .. #list .. " builds)")
     self.presetStatus:SetText(self.selectedPreset and
-        ("Selected: " .. self.selectedPreset.name .. " (not applied)") or
-        "Select a class preset; nothing is applied yet.")
+        ("Selected: " .. self.selectedPreset.name .. " — not applied") or
+        "Choose a preset. No talents changed.")
 end
 
 -- Open from the bot's existing "Set Talents" menu, not the current target.

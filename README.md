@@ -77,6 +77,8 @@ The popup uses the server's separate NT1 command, not the existing premade Playe
 
 Because Set Talents may be opened from a bot roster without actually targeting that bot in the game world, the import page includes **Confirm target**: target the same bot and confirm before applying. A different target, class mismatch, incompatible expansion, permissions or malformed code will be rejected by the client/server as applicable. No preset is automatically applied when selected.
 
+**Observed Wrath 3.3.5a test finding (11 October 2026):** an anonymous `UIPanelScrollFrameTemplate` caused a Lua error in `ScrollFrame_OnLoad` when opening the Mage preset browser. The development PR now gives the Page 4 backup scroll frame a globally unique name, checks this in Lua mocks and shortens bulky Mage-preset/help messages. This correction awaits fresh in-game verification; automated tests are not client proof.
+
 For installation, detailed tests, risks and rollback, see the [maintainer ROADMAP](ROADMAP.md). The existing public [N Addon Collection v2.0.0](https://github.com/CosmicCuddle/N-Addon-Collection/releases/tag/v2.0.0) is unchanged and still contains approved MultiBot 4.0.
 
 ## Companion Bridge Required

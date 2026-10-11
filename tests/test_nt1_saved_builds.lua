@@ -35,6 +35,9 @@ function Frame:Show() self.visible=true end
 function Frame:Hide() self.visible=false end
 function Frame:CreateFontString() return setmetatable({scripts={}},Frame) end
 function CreateFrame(kind,name,parent,template)
+    assert(template~="UIPanelScrollFrameTemplate" or
+        (type(name)=="string" and name~=""),
+        "WoW 3.3.5a scroll-frame OnLoad requires a named template")
     local f=setmetatable({kind=kind,name=name,parent=parent,template=template,scripts={}},Frame)
     if name then _G[name]=f end
     return f
@@ -210,6 +213,8 @@ assert(again:OpenWebsitePresetsForBot("Zevon","Mage",function()
 end))
 assert(again.page==3 and again.presetPage.visible and
     not again.importPage.visible and #commands==0)
+assert(again.presetStatus.text=="Choose a preset. No talents changed.",
+    "Preset help must be short at enlarged UI font scale")
 click(again.presetFilterButtons.Raid)
 assert(again.presetFilter=="Raid" and
     again.presetCounter.text:find("(1 builds)",1,true))
@@ -289,6 +294,9 @@ assert(again:Open())
 click(again.savedButton)
 click(again.backupButton)
 assert(again.page==4 and again.backupPage.visible and again.backupText.multiline)
+assert(_G.MultiBotNT1BackupScrollFrame and
+    _G.MultiBotNT1BackupScrollFrame.scrollChild==again.backupText,
+    "Backup page requires named 3.3.5a-compatible scroll frame")
 click(again.exportButton)
 assert(again.backupText.text:find("^NMB1\n") and
     again.backupText.highlighted and #commands==0)

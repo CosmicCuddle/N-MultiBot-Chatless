@@ -45,6 +45,9 @@ function Frame:CreateFontString()
     return setmetatable({scripts={}},Frame)
 end
 function CreateFrame(kind,name,parent,template)
+    assert(template~="UIPanelScrollFrameTemplate" or
+        (type(name)=="string" and name~=""),
+        "WoW 3.3.5a scroll-frame OnLoad requires a named template")
     local f=setmetatable({kind=kind,name=name,parent=parent,template=template,scripts={}},Frame)
     frames[#frames+1]=f
     if name then _G[name]=f end
@@ -166,7 +169,7 @@ assert(#commands==2 and activeConfirmation and
     "Apply requires confirmation with target and build summary")
 assert(activeConfirmation.text:find("1 selected points",1,true))
 assert(StaticPopupDialogs[activeConfirmation.key].text:find(
-    "No server Apply-ready check yet",1,true))
+    "Experimental: server may reject.",1,true))
 local cancelledCallback=StaticPopupDialogs[activeConfirmation.key].OnAccept
 StaticPopupDialogs[activeConfirmation.key].OnCancel()
 assert(#commands==2 and popup.visible,
