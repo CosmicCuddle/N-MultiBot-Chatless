@@ -14,6 +14,14 @@ function Frame:SetText(v) self.text=v end
 function Frame:GetText() return self.text end
 function Frame:SetJustifyH(v) self.justify=v end
 function Frame:SetTextColor(...) self.color={...} end
+function Frame:SetNormalFontObject(font) self.normalFont=font end
+function Frame:SetHighlightFontObject(font) self.highlightFont=font end
+function Frame:SetAllPoints(frame) self.allPoints=frame end
+function Frame:SetTexture(path) self.texture=path end
+function Frame:SetVertexColor(...) self.vertexColor={...} end
+function Frame:CreateTexture(_,layer)
+    return setmetatable({scripts={},parent=self,layer=layer},Frame)
+end
 function Frame:SetFontObject(v) self.font=v end
 function Frame:SetAutoFocus() end
 function Frame:SetMaxLetters(v) self.maxLetters=v end
@@ -328,12 +336,25 @@ assert(again.presetStatus.text=="Loading never applies talents.",
     "Preset help must be short at enlarged UI font scale")
 assert(not again.loadPresetButton,
     "Website preset rows should load directly without a redundant button")
+assert(again.presetListPanel and again.presetListPanel.width==616 and
+    again.presetRows[1].template==nil and
+    again.presetRows[1].normalFont and
+    again.presetRows[1].background.texture==
+        "Interface\\Buttons\\WHITE8X8" and
+    again.presetRows[1].categoryStripe,
+    "Native dark website preset rows must replace red utility buttons")
 click(again.presetFilterButtons.Raid)
 assert(again.presetFilter=="Raid" and
-    again.presetCounter.text:find("(1 builds)",1,true))
+    again.presetCounter.text:find("(1 builds)",1,true) and
+    again.presetRows[1].categoryLabel.text=="RAID")
+assert(again.presetRows[1].categoryStripe.vertexColor[1]==0.73,
+    "Raid stripe uses a restrained warm accent")
 click(again.presetFilterButtons.Solo)
 assert(again.presetFilter=="Solo" and
-    again.presetCounter.text:find("(4 builds)",1,true))
+    again.presetCounter.text:find("(4 builds)",1,true) and
+    again.presetRows[1].categoryLabel.text=="SOLO")
+assert(again.presetRows[1].categoryStripe.vertexColor[1]==0.31,
+    "Solo stripe uses a distinct cool accent")
 click(again.presetFilterButtons.All)
 assert(again.presetFilter=="All" and #commands==0)
 assert(again.presetClass=="mage" and again.requestedBot=="Zevon")

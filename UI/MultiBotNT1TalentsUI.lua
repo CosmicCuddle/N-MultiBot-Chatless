@@ -543,6 +543,56 @@ local function styledLabel(parent, text, x, y, width, color)
     return label
 end
 
+-- A restrained Wrath-native backdrop for the list: only Blizzard
+-- textures/templates, no custom assets and no protected action changes.
+local function listPanel(parent, x, y, width, height)
+    local panel=CreateFrame("Frame",nil,parent)
+    panel:SetPoint("TOPLEFT",parent,"TOPLEFT",x,y)
+    panel:SetSize(width,height)
+    panel:SetBackdrop({
+        bgFile="Interface\\Tooltips\\UI-Tooltip-Background",
+        edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",
+        tile=true,tileSize=16,edgeSize=12,
+        insets={left=3,right=3,top=3,bottom=3},
+    })
+    panel:SetBackdropColor(0.07,0.065,0.055,0.93)
+    panel:SetBackdropBorderColor(0.42,0.34,0.20,0.82)
+    return panel
+end
+
+-- Unlike UIPanelButtonTemplate, the plain button lets the actual preset
+-- list look like a Blizzard browser rather than red confirmation buttons.
+-- Text and category remain explicit for screen readability.
+local function presetListRow(parent,slot)
+    local row=CreateFrame("Button",nil,parent)
+    row:SetSize(584,31)
+    row:SetPoint("TOPLEFT",parent,"TOPLEFT",38,-82-(slot-1)*37)
+    row:SetNormalFontObject(_G.GameFontHighlightSmall or
+        "GameFontHighlightSmall")
+    row:SetHighlightFontObject(_G.GameFontHighlight or
+        "GameFontHighlight")
+    local bg=row:CreateTexture(nil,"BACKGROUND")
+    bg:SetAllPoints(row)
+    bg:SetTexture("Interface\\Buttons\\WHITE8X8")
+    local shade=(slot%2==0) and 0.14 or 0.11
+    bg:SetVertexColor(shade,shade*0.88,shade*0.67,0.93)
+    row.background=bg
+    local hover=row:CreateTexture(nil,"HIGHLIGHT")
+    hover:SetAllPoints(row)
+    hover:SetTexture("Interface\\Buttons\\WHITE8X8")
+    hover:SetVertexColor(0.29,0.23,0.13,0.40)
+    row.hoverTexture=hover
+    local stripe=row:CreateTexture(nil,"ARTWORK")
+    stripe:SetPoint("TOPLEFT",row,"TOPLEFT",0,0)
+    stripe:SetSize(4,31)
+    stripe:SetTexture("Interface\\Buttons\\WHITE8X8")
+    stripe:SetVertexColor(0.73,0.52,0.22,1)
+    row.categoryStripe=stripe
+    row.categoryLabel=styledLabel(row,"",15,-9,72,
+        {0.91,0.76,0.42})
+    return row
+end
+
 local function button(parent, name, x, y, width, callback, secureTarget)
     local template=secureTarget and
         "SecureActionButtonTemplate,UIPanelButtonTemplate" or
@@ -582,6 +632,12 @@ function Talents:EnsureWindow()
     })
     window:SetBackdropColor(0.035, 0.03, 0.045, 0.98)
     window:SetBackdropBorderColor(0.68, 0.54, 0.30, 1)
+    local divider=window:CreateTexture(nil,"ARTWORK")
+    divider:SetPoint("TOPLEFT",window,"TOPLEFT",22,-91)
+    divider:SetSize(616,2)
+    divider:SetTexture("Interface\\Buttons\\WHITE8X8")
+    divider:SetVertexColor(0.54,0.39,0.20,0.85)
+    self.headerDivider=divider
 
     self.title = styledLabel(window, "NT1 TALENT IMPORT", 22, -22, 560,
         {1, 0.84, 0.42})
@@ -752,10 +808,12 @@ function Talents:EnsureWindow()
     self.savedPageCounter = styledLabel(savedPage, "", 239, -302, 190,
         {1, 0.84, 0.42})
 
-    -- Page 3 appears when Set Talents is opened from a bot's menu.
+    -- Page 3 first visual polish: a deliberate list container and quieter
+    -- rows. Page 1 protected Apply behaviour remains byte-for-byte intact.
     -- Website data is pinned; filters only affect display, not commands.
-    styledLabel(presetPage, "Click a build to load it.",
+    styledLabel(presetPage, "Select a talent build",
         22, -18, 610)
+    self.presetListPanel=listPanel(presetPage,22,-75,616,196)
     self.presetRows = {}
     self.presetPageIndex = 1
     self.presetFilter = "All"
@@ -775,9 +833,7 @@ function Talents:EnsureWindow()
     end
     for i=1,5 do
         local slot=i
-        local row = CreateFrame("Button", nil, presetPage, "UIPanelButtonTemplate")
-        row:SetSize(610, 31)
-        row:SetPoint("TOPLEFT", presetPage, "TOPLEFT", 24, -82-(i-1)*37)
+        local row=presetListRow(presetPage,i)
         row:SetText("")
         row:SetScript("OnClick", function()
             local list = Talents:ListFilteredWebsitePresets(Talents.presetClass)
@@ -788,7 +844,8 @@ function Talents:EnsureWindow()
         self.presetRows[i]=row
     end
     self.presetStatus = styledLabel(presetPage,
-        "Loading never applies talents.", 22, -266, 610)
+        "Loading never applies talents.", 22, -280, 610,
+        {0.72,0.79,0.80})
     self.presetCounter = styledLabel(presetPage, "", 239, -302, 190,
         {1, 0.84, 0.42})
 
@@ -1068,12 +1125,19 @@ function Talents:UpdatePresetPage()
     for i,row in ipairs(self.presetRows) do
         local entry=list[(self.presetPageIndex-1)*5+i]
         if entry then
-            local label=entry.category .. ": " .. entry.name ..
-                " (" .. entry.role .. ")"
+            local label=entry.name .. " (" .. entry.role .. ")"
             if (entry.variant or 1)>1 then
                 label=label .. " v" .. entry.variant
             end
             row:SetText(label)
+            row.categoryLabel:SetText(string.upper(entry.category))
+            if entry.category=="Raid" then
+                row.categoryStripe:SetVertexColor(0.73,0.52,0.22,1)
+                row.categoryLabel:SetTextColor(0.91,0.76,0.42)
+            else
+                row.categoryStripe:SetVertexColor(0.31,0.56,0.71,1)
+                row.categoryLabel:SetTextColor(0.57,0.79,0.91)
+            end
             row:Show()
         else
             row:Hide()

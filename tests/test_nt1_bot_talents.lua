@@ -21,6 +21,14 @@ function Frame:SetText(value) self.text=value end
 function Frame:GetText() return self.text end
 function Frame:SetJustifyH(value) self.justify=value end
 function Frame:SetTextColor(...) self.color={...} end
+function Frame:SetNormalFontObject(font) self.normalFont=font end
+function Frame:SetHighlightFontObject(font) self.highlightFont=font end
+function Frame:SetAllPoints(frame) self.allPoints=frame end
+function Frame:SetTexture(path) self.texture=path end
+function Frame:SetVertexColor(...) self.vertexColor={...} end
+function Frame:CreateTexture(_,layer)
+    return setmetatable({scripts={},parent=self,layer=layer},Frame)
+end
 function Frame:SetFontObject(value) self.font=value end
 function Frame:SetAutoFocus() end
 function Frame:SetMaxLetters(value) self.maxLetters=value end
