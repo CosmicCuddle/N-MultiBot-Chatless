@@ -30,6 +30,10 @@ function Frame:SetBackdropColor() end
 function Frame:SetBackdropBorderColor() end
 function Frame:SetFocus() self.focused=true end
 function Frame:ClearFocus() self.focused=false end
+function Frame:RegisterEvent(event)
+    self.registeredEvents=self.registeredEvents or {}
+    self.registeredEvents[event]=true
+end
 function Frame:SetScript(k,fn) self.scripts[k]=fn end
 function Frame:Show() self.visible=true end
 function Frame:Hide() self.visible=false end
@@ -296,16 +300,30 @@ assert(#commands==0,"A menu-selected but untargeted bot must never receive apply
 click(again.targetConfirm)
 assert(again.status.text:find("Target Zevon",1,true) and
     again.boundTarget==nil)
+-- Apply should guide toward the roster bot without dispatching commands
+-- or showing a red UI error. The target event may bind but never Apply.
+click(again.applyButton)
+assert(again.awaitingTarget and #commands==0 and
+    again.status.text:find("Target Zevon",1,true))
+assert(again.window.registeredEvents.PLAYER_TARGET_CHANGED)
+assert(not again.pendingApply)
 target={name="Zevon",guid="Player-S",class="SHAMAN"}
-click(again.targetConfirm)
-assert(not again.boundTarget and
-    again.status.text:find("mage",1,true),
+again.window.scripts.OnEvent(again.window,"PLAYER_TARGET_CHANGED")
+assert(not again.boundTarget and #commands==0 and
+    again.status.text:find("MAGE",1,true),
     "Matching name but wrong roster class must never verify")
 assert(#commands==0)
 target={name="Zevon",guid="Player-Z",class="MAGE"}
-click(again.targetConfirm)
+again.window.scripts.OnEvent(again.window,"PLAYER_TARGET_CHANGED")
 assert(again.boundTarget and again.boundTarget.name=="Zevon")
-assert(#commands==0,"Target confirmation is not an apply action")
+assert(again.status.text:find("Target verified",1,true))
+assert(#commands==0,"Target event verifies but never applies")
+assert(not again.awaitingTarget and not again.pendingApply)
+click(again.applyButton)
+assert(again.pendingApply and #commands==0)
+StaticPopupDialogs.MULTIBOT_NT1_APPLY_CONFIRM.OnCancel()
+assert(not again.pendingApply and #commands==0,
+    "Cancelling Apply confirmation must not dispatch")
 assert(again:OpenWebsitePresetsForBot("Zevon","mage",function()
     originalSpecsOpened=true
 end))

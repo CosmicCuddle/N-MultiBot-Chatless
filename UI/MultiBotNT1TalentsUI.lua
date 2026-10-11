@@ -135,7 +135,76 @@ function Talents:DescribeCode(text)
 end
 
 local APPLY_CONFIRM_KEY = "MULTIBOT_NT1_APPLY_CONFIRM"
+
+-- Roster website presets can open without selecting the corresponding unit.
+-- This is only guidance and secure target binding; no command is ever sent.
+function Talents:CheckIntendedTarget(action)
+    local expectedName=self.requestedBot or
+        (self.boundTarget and self.boundTarget.name)
+    if not expectedName or expectedName=="" then
+        return false, "Reopen Set Talents for the correct bot.", false
+    end
+    local current=getTarget()
+    if not current or string.lower(current.name)~=
+        string.lower(expectedName) then
+        self.awaitingTarget=true
+        self.awaitingAction=action or "apply"
+        return false, "Target " .. expectedName .. " in game, then click " ..
+            (self.awaitingAction=="preview" and "Preview." or
+                "Apply talents."), true
+    end
+    if not CLASSES[current.class] or
+        (self.presetClass and current.class~=self.presetClass) then
+        self.awaitingTarget=true
+        self.awaitingAction=action or "apply"
+        return false, "Target " .. expectedName .. " (" ..
+            string.upper(self.presetClass or "correct class") ..
+            "), then try again.", true
+    end
+    -- Do not permit a same-name different-GUID replacement to silently
+    -- inherit an earlier bot's target verification.
+    if self.boundTarget and self.boundTarget.guid and
+        self.boundTarget.guid~=current.guid then
+        self.awaitingTarget=false
+        self.awaitingAction=nil
+        return false, "Bot identity differs. Reopen Set Talents.", false
+    end
+    self.boundTarget=current
+    self.awaitingTarget=false
+    self.awaitingAction=nil
+    if self.targetLabel then
+        self.targetLabel:SetText("Bot: " .. current.name ..
+            "  |  Class: " .. (current.class or "unknown"))
+    end
+    return true
+end
+
+function Talents:OnTargetChanged()
+    if not self.window or not self.window:IsShown() then return end
+    if self.pendingApply then
+        -- Invalidate a confirmation as soon as target selection changes.
+        self.pendingApply=nil
+        if type(StaticPopup_Hide)=="function" then
+            StaticPopup_Hide(APPLY_CONFIRM_KEY)
+        end
+        if self.status then
+            self.status:SetText("Target changed. Click Apply again.")
+        end
+    end
+    if self.awaitingTarget and self.page==1 then
+        local action=self.awaitingAction or "apply"
+        local ok,hint=self:CheckIntendedTarget(action)
+        if self.status then
+            self.status:SetText(ok and
+                ("Target verified. Click " ..
+                    (action=="preview" and "Preview." or "Apply talents.")) or hint)
+        end
+    end
+end
+
 function Talents:RequestApplyConfirmation()
+    local matched,hint,guided=self:CheckIntendedTarget("apply")
+    if not matched then return false,hint,guided end
     local plan, errorText = self:PrepareCommand("apply", self.input:GetText())
     if not plan then return false, errorText end
     local summary = self:DescribeCode(plan.code)
@@ -568,40 +637,29 @@ function Talents:EnsureWindow()
             if ok then Talents.selectedName = trimmedName end
         end)
 
-    self.targetConfirm = button(importPage, "Confirm target", 469, 150, 157,
+    self.targetConfirm = button(importPage, "Check target", 469, 150, 157,
         function()
-            local requested = Talents.requestedBot
-            -- Failed reconfirmation must never leave an old binding active.
-            Talents.boundTarget = nil
-            local current, why = getTarget()
-            if not current then
-                Talents.status:SetText(why)
-                return
-            end
-            if requested and string.lower(current.name) ~=
-                string.lower(requested) then
-                Talents.status:SetText("Target " .. requested .. " before applying.")
-                return
-            end
-            -- A roster bot's class is part of the intended identity.
-            if Talents.presetClass and current.class ~= Talents.presetClass then
-                Talents.status:SetText("Target a " .. Talents.presetClass ..
-                    " bot before applying.")
-                return
-            end
-            Talents.boundTarget = current
-            Talents.targetLabel:SetText("Bot: " .. current.name ..
-                "  |  Class: " .. (current.class or "unknown"))
-            Talents.status:SetText("Target verified. Preview before Apply.")
+            local ok,hint=Talents:CheckIntendedTarget("apply")
+            Talents.status:SetText(ok and
+                "Target verified. Preview before Apply." or hint)
         end)
 
     self.previewButton = button(importPage, "Preview", 22, 18, 110,
-        function() submit("preview") end)
+        function()
+            local ok,hint,guided=Talents:CheckIntendedTarget("preview")
+            if not ok then
+                Talents.status:SetText(hint)
+                if not guided then message(hint,true) end
+            else
+                submit("preview")
+            end
+        end)
     self.applyButton = button(importPage, "Apply talents", 138, 18, 130,
         function()
-            local ok, result = Talents:RequestApplyConfirmation()
+            local ok,result,guided=Talents:RequestApplyConfirmation()
             Talents.status:SetText(result)
-            message(result, not ok)
+            -- Expected target guidance is not a red UI error.
+            if not guided then message(result,not ok) end
         end)
     self.cancelButton = button(importPage, "Cancel", 274, 18, 104,
         function()
@@ -718,6 +776,8 @@ function Talents:EnsureWindow()
         pendingSave = nil
         Talents.pendingDelete = nil
         Talents.pendingApply = nil
+        Talents.awaitingTarget = false
+        Talents.awaitingAction = nil
         Talents.page = page
         importPage:Hide()
         savedPage:Hide()
@@ -896,6 +956,13 @@ function Talents:EnsureWindow()
     if type(UISpecialFrames) == "table" then
         table.insert(UISpecialFrames, WINDOW_NAME)
     end
+    -- Target selection events update guidance, never dispatch server chat.
+    window:RegisterEvent("PLAYER_TARGET_CHANGED")
+    window:SetScript("OnEvent", function(_,event)
+        if event=="PLAYER_TARGET_CHANGED" then
+            Talents:OnTargetChanged()
+        end
+    end)
     window:Hide()
     self.window = window
     Talents.showPage(1)
@@ -974,12 +1041,14 @@ function Talents:LoadWebsitePreset(entry)
     self.input:SetText(code)
     self.nameBox:SetText(entry.name .. " " .. entry.category)
     self.showPage(1)
-    self.status:SetText("Build loaded. Confirm target, then Preview.")
+    self.status:SetText("Build loaded. Target " ..
+        (self.requestedBot or "the bot") .. ", then Preview or Apply.")
     return true
 end
 
 -- Open from the bot's existing "Set Talents" menu, not the current target.
--- Actual apply is deliberately locked until Confirm target matches the bot.
+-- Apply is locked until the correct bot name/class and GUID are verified.
+-- Merely changing targets can never automatically issue a command.
 function Talents:OpenWebsitePresetsForBot(bot, className, originalSpecsCallback)
     local class=type(className)=="string" and
         className:lower():gsub("[^a-z]", "") or ""
@@ -988,6 +1057,8 @@ function Talents:OpenWebsitePresetsForBot(bot, className, originalSpecsCallback)
     self.requestedBot=bot:match("^[^-]+") or bot
     self.presetClass=class
     self.originalSpecsCallback=originalSpecsCallback
+    self.awaitingTarget=false
+    self.awaitingAction=nil
     self.selectedPreset=nil
     self.presetPageIndex=1
     self.presetFilter="All"
@@ -1010,6 +1081,8 @@ function Talents:Open()
     local target, reason = getTarget()
     if not target then message(reason, true); return false end
     self.boundTarget = target
+    self.awaitingTarget = false
+    self.awaitingAction = nil
     self.requestedBot = target.name
     self.originalSpecsCallback = nil
     self.selectedPreset = nil

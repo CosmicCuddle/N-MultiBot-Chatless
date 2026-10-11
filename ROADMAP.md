@@ -51,6 +51,14 @@ Original pinned source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea9
 | README.md | new user instructions, source notes and risks |
 | ROADMAP.md | this permanent maintainer handover |
 
+### 11 October 2026 — guided roster-bot target selection
+
+- **Actual client report:** a Priest Raid website preset for bot **Arndor** was loaded while the game target was another character (**Karnok**); the addon displayed `Target changed. Reopen Talents for the correct bot.` in red, repeatedly. Roster menus do not require the player to already target that bot.
+- **Fix:** Preview/Apply buttons now show compact, quiet guidance to target **Arndor** (with class verification), without sending a command. Listen for WoW 3.3.5a `PLAYER_TARGET_CHANGED`; only a name/class/GUID-compatible target can become bound, and the window then displays `Target verified. Click Apply talents.` or `Click Preview.` No automatic Preview, Apply, or confirmation happens on event; **another deliberate button click is always necessary**.
+- Former Confirm target control becomes an optional **Check target** button sharing the same logic. A verified same-name/different-GUID entity cannot silently inherit binding. Changing target during a pending Apply confirmation invalidates the confirmation and hides the popup when supported, even if the original bot is subsequently retargeted.
+- Extend Lua mock regressions for waiting, wrong class, target change, no automatic commands, explicit re-click, cancellation and GUID substitution. Maintain server-side authority and all 47 approved preset codes. No Mod-Naxxramas-Core, Playerbots, SQL, DBC or public collection edits.
+- **Next:** check CI, install the new standalone ZIP with the previously created addon/WTF backups, repeat Arndor-from-roster scenario, send UI screenshot and verify no Lua errors. Keep destructive Apply disabled until server safety review.
+
 ### 11 October 2026 — single-click website preset loading
 
 - **Owner-requested UX:** clicking a red website preset row immediately loads that code and name into NT1 Import (Page 1). Remove the redundant website-page **Load to import** button; retain **Bot specs** and **Cancel**, with room for the larger in-game UI font. This is **local navigation only**, never a command dispatch or an automatic Apply. The separate Confirm target, Preview and two-stage Apply confirmation are unchanged.

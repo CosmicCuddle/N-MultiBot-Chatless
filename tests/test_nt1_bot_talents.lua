@@ -37,6 +37,10 @@ function Frame:SetBackdropColor() end
 function Frame:SetBackdropBorderColor() end
 function Frame:SetFocus() self.focused=true end
 function Frame:ClearFocus() self.focused=false end
+function Frame:RegisterEvent(event)
+    self.registeredEvents=self.registeredEvents or {}
+    self.registeredEvents[event]=true
+end
 function Frame:SetScript(event, callback) self.scripts[event]=callback end
 function Frame:Show() self.visible=true end
 function Frame:Hide() self.visible=false end
@@ -196,6 +200,14 @@ assert(#commands==3 and commands[3]==
 assert(not popup.visible,"Successful confirmed submission closes popup")
 assert(importer:Open(),"Reopen should work")
 assert(importer.input.text=="","Reopen must not reuse a dangerous previously pasted code")
+-- Direct import retains bot GUID and rejects a same-named replacement.
+importer.input:SetText(code)
+currentTarget={name="Testwarrior",guid="Player-New",class="WARRIOR"}
+local matched,hint,guided=importer:CheckIntendedTarget("apply")
+assert(not matched and not guided and
+    hint:find("identity differs",1,true))
+assert(#commands==3)
+currentTarget={name="Testwarrior",guid="Player-01",class="WARRIOR"}
 assert(#UISpecialFrames==1,"ESC registration must never duplicate")
 importer.input.scripts.OnEscapePressed(importer.input)
 assert(not popup.visible and not importer.input.focused,
