@@ -1,0 +1,151 @@
+-- Mock WoW 3.3.5a: persistent saved NT1 codes, page 1/page 2 and safety.
+MultiBot = {}
+MultiBotNT1SavedBuilds = nil
+UISpecialFrames = {}
+local commands = {}
+local target = {name="Zevon", class="MAGE", guid="Player-Z"}
+local Frame = {}
+Frame.__index = Frame
+function Frame:SetWidth(v) self.width=v end
+function Frame:SetHeight(v) self.height=v end
+function Frame:SetSize(w,h) self.width=w self.height=h end
+function Frame:SetPoint(...) self.position={...} end
+function Frame:SetText(v) self.text=v end
+function Frame:GetText() return self.text end
+function Frame:SetJustifyH(v) self.justify=v end
+function Frame:SetTextColor(...) self.color={...} end
+function Frame:SetFontObject(v) self.font=v end
+function Frame:SetAutoFocus() end
+function Frame:SetMaxLetters(v) self.maxLetters=v end
+function Frame:SetFrameStrata() end
+function Frame:SetMovable() end
+function Frame:SetClampedToScreen() end
+function Frame:EnableMouse() end
+function Frame:RegisterForDrag() end
+function Frame:SetBackdrop() end
+function Frame:SetBackdropColor() end
+function Frame:SetBackdropBorderColor() end
+function Frame:SetFocus() self.focused=true end
+function Frame:ClearFocus() self.focused=false end
+function Frame:SetScript(k,fn) self.scripts[k]=fn end
+function Frame:Show() self.visible=true end
+function Frame:Hide() self.visible=false end
+function Frame:CreateFontString() return setmetatable({scripts={}},Frame) end
+function CreateFrame(kind,name,parent,template)
+    local f=setmetatable({kind=kind,name=name,parent=parent,template=template,scripts={}},Frame)
+    if name then _G[name]=f end
+    return f
+end
+local function click(b) assert(b and b.scripts.OnClick); b.scripts.OnClick(b) end
+UIParent=CreateFrame("Frame","UIParent")
+UIErrorsFrame={AddMessage=function() end}
+function UnitExists(w) return w=="target" and target ~= nil end
+function UnitIsPlayer(w) return w=="target" and target ~= nil end
+function UnitIsUnit(w,o) return w=="target" and o=="player" and target and target.name=="Currentplayer" end
+function UnitName(w) return w=="target" and target and target.name end
+function UnitGUID(w) return w=="target" and target and target.guid end
+function UnitClass(w) return w=="target" and "Mage","MAGE" end
+function SendChatMessage(s,channel)
+    assert(channel=="SAY")
+    commands[#commands+1]=s
+end
+dofile("UI/MultiBotNT1TalentsUI.lua")
+local api=assert(MultiBot.NT1Talents)
+local mage="NT1:vanilla:mage:3g-1"
+local mage2="NT1:vanilla:mage:3g-2"
+local shaman="NT1:vanilla:shaman:3g-1"
+assert(#api:ListSavedBuilds()==0 and api:GetSavedCode("anything")==nil,
+    "New account should have no saved builds")
+assert(not api:SaveBuild("",mage))
+assert(not api:SaveBuild("Broken","junk"))
+assert(not api:SaveBuild("Name\nInjected",mage))
+assert(not api:SaveBuild(string.rep("x",41),mage))
+assert(api:SaveBuild("  Vanilla Fire  ",mage))
+assert(type(MultiBotNT1SavedBuilds)=="table" and
+    MultiBotNT1SavedBuilds["Vanilla Fire"]==mage)
+assert(api:SaveBuild("vAnIlLa fIrE",mage) and #api:ListSavedBuilds()==1,
+    "Case variants should not duplicate a saved name")
+assert(not api:SaveBuild("vanilla fire",mage2),
+    "An existing name cannot be silently overwritten")
+assert(api:GetSavedCode("VANILLA FIRE")==mage)
+assert(api:SaveBuild("vanilla fire",mage2,true))
+assert(api:GetSavedCode("Vanilla Fire")==mage2)
+assert(api:SaveBuild("Restoration Test",shaman),
+    "Other classes can be stored without selecting one as target")
+local names=api:ListSavedBuilds()
+assert(#names==2 and names[1].name=="Restoration Test" and
+    names[2].name=="Vanilla Fire",
+    "Saved names sorted without changing original case")
+assert(names[1].class=="shaman" and names[2].era=="vanilla")
+assert(api:Open())
+assert(api.page==1 and api.importPage.visible and not api.savedPage.visible)
+assert(api.window.height==465 and api.window.width==660)
+assert(api.nameBox.maxLetters==40 and api.input.maxLetters==2048)
+assert(#commands==0)
+api.input:SetText(mage)
+api.nameBox:SetText("PvE Mage")
+click(api.saveButton)
+assert(api:GetSavedCode("PvE Mage")==mage and #commands==0,
+    "Saving must never send a server command")
+api.input:SetText(mage2)
+click(api.saveButton)
+assert(api:GetSavedCode("PvE Mage")==mage and
+    api.status.text:find("Save again",1,true),
+    "Overwrite requires confirmation")
+click(api.saveButton)
+assert(api:GetSavedCode("PvE Mage")==mage2 and #commands==0)
+-- The saved page must not apply codes merely when opened or selected.
+click(api.savedButton)
+assert(api.page==2 and api.savedPage.visible and not api.importPage.visible)
+assert(#api:ListSavedBuilds()==3 and #commands==0)
+click(api.savedRows[1])
+assert(api.selectedName=="PvE Mage" and #commands==0)
+-- A different class can still be loaded for editing, but the apply path
+-- retains the target-class preflight and may never bypass server validation.
+click(api.loadButton)
+assert(api.page==1 and api.input.text==mage2 and api.nameBox.text=="PvE Mage")
+assert(#commands==0)
+click(api.savedButton)
+click(api.savedRows[2]) -- Restoration Test (shaman)
+click(api.loadButton)
+assert(api.input.text==shaman and #commands==0)
+assert(api.status.text:find("Cannot apply",1,true))
+assert(not api:SendToTarget("apply",api.input.text) and #commands==0)
+-- A selected named build is deleted only by two separate clicks.
+click(api.savedButton)
+click(api.savedRows[1]) -- PvE Mage
+click(api.deleteButton)
+assert(api:GetSavedCode("PvE Mage") and #commands==0)
+click(api.deleteButton)
+assert(api:GetSavedCode("PvE Mage")==nil and #commands==0)
+-- Multiple pages (5 entries per page) and safe page navigation.
+for i=1,9 do
+    assert(api:SaveBuild("Test "..i,mage))
+end
+api.savedPageIndex=1
+api:UpdateSavedPage()
+assert(api.savedPageCounter.text:find("/ 3",1,true),
+    "11 saved builds need 3 pages, 5 per page")
+click(api.nextSavedPage)
+assert(api.savedPageIndex==2)
+click(api.nextSavedPage)
+assert(api.savedPageIndex==3)
+click(api.nextSavedPage)
+assert(api.savedPageIndex==3)
+click(api.previousSavedPage)
+assert(api.savedPageIndex==2)
+assert(#commands==0,"Page 2 browsing must never submit commands")
+-- Simulate Lua UI reinitialization after reload; the account-wide store
+-- persists as a separate SavedVariables global.
+local store=MultiBotNT1SavedBuilds
+MultiBot.NT1Talents=nil
+dofile("UI/MultiBotNT1TalentsUI.lua")
+local again=assert(MultiBot.NT1Talents)
+assert(MultiBotNT1SavedBuilds==store and #again:ListSavedBuilds()==11,
+    "Simulated reload must keep named codes without migrating settings")
+assert(again:GetSavedCode("Restoration Test")==shaman)
+assert(not again:DeleteBuild("missing"))
+assert(again:DeleteBuild("RESTORATION TEST"))
+assert(again:GetSavedCode("Restoration Test")==nil)
+assert(#commands==0)
+print("NT1 saved-build persistence, names, overwrites, two-page GUI, deletion, pagination and no-auto-apply passed")
