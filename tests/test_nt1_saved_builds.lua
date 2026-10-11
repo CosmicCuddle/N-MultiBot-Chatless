@@ -156,8 +156,23 @@ assert(api:GetSavedCode("PvE Mage")==mage2 and #commands==0)
 click(api.savedButton)
 assert(api.page==2 and api.savedPage.visible and not api.importPage.visible)
 assert(#api:ListSavedBuilds()==3 and #commands==0)
+assert(api.savedListPanel and api.savedListPanel.width==616 and
+    api.savedListPanel.height==207,
+    "Saved list must use the same native list style as Website Presets")
+assert(api.savedStatus.position[5]==-18 and
+    api.savedRows[1].position[5]==-60 and
+    api.savedListPanel.position[5]==-52 and
+    api.savedRows[1].template==nil,
+    "Saved help, panel and first row must stay above footer at large font")
+assert(api.savedRows[1].categoryLabel.text=="MAGE" and
+    api.savedRows[1].eraLabel.text=="VANILLA" and
+    api.savedRows[1].nameLabel.text=="PvE Mage",
+    "Saved rows must display class, era and build name separately")
 click(api.savedRows[1])
 assert(api.selectedName=="PvE Mage" and #commands==0)
+assert(api.savedRows[1].nameLabel.text=="> PvE Mage" and
+    api.savedRows[1].categoryStripe.vertexColor[2]==0.75,
+    "Selected saved build is marked visibly without changing data")
 -- A different class can still be loaded for editing, but the apply path
 -- retains the target-class preflight and may never bypass server validation.
 click(api.loadButton)
@@ -174,6 +189,8 @@ click(api.savedButton)
 click(api.savedRows[1]) -- PvE Mage
 click(api.deleteButton)
 assert(api:GetSavedCode("PvE Mage") and #commands==0)
+assert(api.savedStatus.text==
+    "Delete selected build? Click Delete again.")
 click(api.deleteButton)
 assert(api:GetSavedCode("PvE Mage")==nil and #commands==0)
 -- Multiple pages (5 entries per page) and safe page navigation.
@@ -184,6 +201,9 @@ api.savedPageIndex=1
 api:UpdateSavedPage()
 assert(api.savedPageCounter.text:find("/ 3",1,true),
     "11 saved builds need 3 pages, 5 per page")
+assert(api.savedRows[5].position[5]==-220 and
+    api.savedListPanel.position[5]-api.savedListPanel.height==-259,
+    "Five saved rows fit inside the fixed panel above footer controls")
 click(api.nextSavedPage)
 assert(api.savedPageIndex==2)
 click(api.nextSavedPage)

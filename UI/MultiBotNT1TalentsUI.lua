@@ -563,10 +563,11 @@ end
 -- Unlike UIPanelButtonTemplate, the plain button lets the actual preset
 -- list look like a Blizzard browser rather than red confirmation buttons.
 -- Text and category remain explicit for screen readability.
-local function presetListRow(parent,slot)
+local function presetListRow(parent,slot,firstRowOffset,rowSpacing)
     local row=CreateFrame("Button",nil,parent)
     row:SetSize(584,31)
-    row:SetPoint("TOPLEFT",parent,"TOPLEFT",38,-82-(slot-1)*37)
+    row:SetPoint("TOPLEFT",parent,"TOPLEFT",38,
+        -(firstRowOffset or 82)-(slot-1)*(rowSpacing or 37))
     row:SetNormalFontObject(_G.GameFontHighlightSmall or
         "GameFontHighlightSmall")
     row:SetHighlightFontObject(_G.GameFontHighlight or
@@ -780,19 +781,23 @@ function Talents:EnsureWindow()
 
     -- Saved page uses five rows per page, not a single endless icon list.
     -- Selecting or loading is read-only; no server command is sent here.
-    styledLabel(savedPage, "SAVED BUILDS  |  Select a build to review or manage.",
-        22, -21, 606)
+    -- Saved Builds shares the visually accepted website-list styling.
+    -- Status stays at the top: an enlarged client font cannot fit another
+    -- full-width line below five rows without colliding with the footer.
+    self.savedStatus=styledLabel(savedPage,
+        "Select a saved build. No talents applied.",
+        22,-18,606,{0.86,0.85,0.79})
+    self.savedListPanel=listPanel(savedPage,22,-52,616,207)
     self.savedRows = {}
     local PAGE_SIZE = 5
     self.savedPageIndex = 1
     for i=1,PAGE_SIZE do
         local slot = i
-        local rowButton = CreateFrame("Button", nil, savedPage,
-            "UIPanelButtonTemplate")
-        rowButton:SetSize(610, 31)
-        rowButton:SetPoint("TOPLEFT", savedPage, "TOPLEFT",
-            24, -60 - (i-1)*40)
-        rowButton:SetText("")
+        local rowButton=presetListRow(savedPage,i,60,40)
+        rowButton.categoryLabel:SetWidth(128)
+        rowButton.nameLabel=styledLabel(rowButton,"",164,-9,298)
+        rowButton.eraLabel=styledLabel(rowButton,"",482,-9,98,
+            {0.67,0.76,0.78})
         rowButton:SetScript("OnClick", function()
             local list = Talents:ListSavedBuilds()
             local entry = list[(Talents.savedPageIndex-1)*PAGE_SIZE + slot]
@@ -803,8 +808,7 @@ function Talents:EnsureWindow()
         end)
         self.savedRows[i] = rowButton
     end
-    self.savedStatus = styledLabel(savedPage,
-        "Choose a build. Loading never applies it.", 22, -266, 610)
+    -- No status label next to the footer navigation or page counter.
     self.savedPageCounter = styledLabel(savedPage, "", 239, -302, 190,
         {1, 0.84, 0.42})
 
@@ -970,15 +974,16 @@ function Talents:EnsureWindow()
             end
             if Talents.pendingDelete ~= chosen then
                 Talents.pendingDelete = chosen
-                Talents.savedStatus:SetText("Click Delete again to remove " ..
-                    chosen .. ".")
+                Talents.savedStatus:SetText(
+                    "Delete selected build? Click Delete again.")
                 return
             end
             local _, why = Talents:DeleteBuild(chosen)
             Talents.selectedName = nil
             Talents.pendingDelete = nil
             Talents:UpdateSavedPage()
-            Talents.savedStatus:SetText(why)
+            Talents.savedStatus:SetText(why and "Build deleted." or
+                "Could not delete build.")
         end)
 
     self.backupButton = button(savedPage, "Backup / Import", 499, 17, 137,
@@ -1097,12 +1102,24 @@ function Talents:UpdateSavedPage()
     for i, row in ipairs(self.savedRows) do
         local entry = list[(self.savedPageIndex-1)*size + i]
         if entry then
-            local chosen = self.selectedName == entry.name and "> " or "   "
-            local label = entry.name
-            if #label > 25 then label = label:sub(1,22) .. "..." end
-            row:SetText(chosen .. label .. "  |  " ..
-                string.upper(entry.class) .. " / " ..
-                string.upper(entry.era))
+            local chosen=self.selectedName==entry.name
+            local name=entry.name
+            if #name>22 then name=name:sub(1,19).. "..." end
+            row:SetText("")
+            row.categoryLabel:SetText(string.upper(entry.class))
+            row.nameLabel:SetText((chosen and "> " or "")..name)
+            row.eraLabel:SetText(string.upper(entry.era))
+            if chosen then
+                row.categoryStripe:SetVertexColor(0.42,0.75,0.40,1)
+                row.background:SetVertexColor(0.17,0.21,0.15,0.96)
+                row.nameLabel:SetTextColor(0.94,1,0.86)
+            else
+                row.categoryStripe:SetVertexColor(0.73,0.52,0.22,1)
+                local shade=(i%2==0) and 0.14 or 0.11
+                row.background:SetVertexColor(shade,shade*0.88,
+                    shade*0.67,0.93)
+                row.nameLabel:SetTextColor(1,1,1)
+            end
             row:Show()
         else
             row:Hide()
@@ -1110,9 +1127,13 @@ function Talents:UpdateSavedPage()
     end
     self.savedPageCounter:SetText("Page " .. self.savedPageIndex ..
         " / " .. maxPages .. "  (" .. #list .. " builds)")
-    self.savedStatus:SetText(self.selectedName and
-        ("Selected: " .. self.selectedName .. " — not applied") or
-        "Select a saved build to load.")
+    if self.selectedName then
+        local short=self.selectedName
+        if #short>24 then short=short:sub(1,21).."..." end
+        self.savedStatus:SetText("Selected: "..short.." (not applied)")
+    else
+        self.savedStatus:SetText("Select a saved build. No talents applied.")
+    end
 end
 
 function Talents:UpdatePresetPage()
