@@ -25,6 +25,15 @@ The immediate next interaction should be: provide the latest standalone test ZIP
 - Commit `46e9060` updated `tests/test_nt1_bot_talents.lua` and `ROADMAP.md` to assert the new positions. All three checks are now green.
 - This handover document is a documentation-only follow-up. Verify the **latest** PR HEAD and its checks before providing a ZIP; do not mistake an older failed run for the current state.
 
+## 12 October 2026 — resumed visual QA and verified package
+
+- Latest inspected draft PR #5 HEAD before this documentation update: `1f1434f51b971d3fd72a1a28645b9d58edc1d5f9` (**documentation-only** commit; no addon code changed from `46e9060345f51fd5262b1480567f200919037407`). PR remains **open, draft and unmerged**.
+- At `1f1434f`, exact-head GitHub Actions **all passed**: [NT1 Lua 5.1 regressions and standalone ZIP #38237942981](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38237942981), [Lua Lint #38237942975](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38237942975), and [Lua Format #38237942976](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38237942976). The packaged Actions artifact is `multibot-nt1-talents-test`, artifact ID `11741303431`. These supersede the older CI links above for **download recency**; the previously recorded addon-code commit remains valid.
+- Manually inspected the downloaded GitHub Actions artifact: its **outer workflow archive contains a nested install ZIP**, `MultiBot-NT1-Talents-test.zip`. The **inner ZIP** passed ZIP CRC/integrity verification, has exactly one top-level `MultiBot/` folder with 322 entries, includes the NT1 UI, approved preset data, original Bot specs UI and `MultiBot.toc`, and contains **every TOC-referenced file**. To install, unpack the **inner** ZIP directly into `Interface/AddOns/`, not the outer Actions artifact.
+- The inner install-ready ZIP was provided for owner-side testing; **this is not a release**. Before replacing addon files: fully close WoW, back up the existing `Interface/AddOns/MultiBot` directory and account `WTF` SavedVariables, and retain the previous working ZIP for rollback.
+- **Next owner action, unchanged:** load a real long 51-point Warrior/Mage/Warlock website build into Page 1 and share **one screenshot of the entire NT1 Talent Import window at the normal enlarged UI/font scale**. Inspect code input, Save As, local Build summary, status/warning text, Save code and Check target buttons, and bottom navigation for overlap or Lua errors. **Do not confirm Apply**; server `AccessMode=0` can remain. The Page 1 design is **CI-passed but still awaiting in-game visual acceptance**.
+- No Page 4 polish, NMB1 manual import/export exercise, website code changes, server code, SQL, DBC, PR merge, or published N Addon Collection changes were performed in this checkpoint.
+
 ## What the project owner has actually confirmed in-game
 
 | Area | Actual client evidence | Status |
