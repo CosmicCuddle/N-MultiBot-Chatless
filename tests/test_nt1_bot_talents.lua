@@ -120,6 +120,13 @@ assert(MultiBot.InitializeNT1TalentsUI(right)==importer)
 assert(#created==1 and created[1].name=="NT1Talents" and created[1].x==136,
     "One new right-side NT1 talents button should be present")
 assert(created[1].tip:find("Naxxramas Core",1,true))
+assert(created[1].tip:find("0 off;",1,true) and
+    created[1].tip:find("1 GM Apply;",1,true) and
+    created[1].tip:find("2 permitted-player Apply.",1,true) and
+    created[1].tip:find("3 GM read-only;",1,true) and
+    created[1].tip:find("4 permitted-player read-only.",1,true) and
+    not created[1].tip:find("Requires Naxxramas Core BotTalentImport AccessMode 1 or 2.",1,true),
+    "NT1 tooltip must explain server-owned modes 0–4, not imply only 1/2")
 assert(MultiBot.InitializeNT1TalentsUI(right)==importer and #created==1,
     "Repeated initialization must not duplicate toolbar buttons")
 assert(importer:ValidateCode("NT1:vanilla:warrior:3g-1", "warrior"))
@@ -176,6 +183,14 @@ assert(importer.input.position[5] == -106 and
     importer.importSafety.parent == importer.importInfoPanel and
     importer.importSaveLabel.parent == importer.importNamePanel,
     "NT1 code, status, build and safety rows must not collide")
+assert(importer.safetyButton and
+    importer.safetyButton.text=="Safety Inspection" and
+    importer.safetyButton.position[4]==34 and
+    importer.safetyButton.position[5]==150 and
+    importer.safetyButton.width==184 and
+    importer.safetyButton.height==25 and
+    not (importer.safetyButton.template or ""):find("SecureActionButtonTemplate",1,true),
+    "Read-only Safety Inspection must fit the spare Save As row without moving Apply")
 assert(created[1].icon == "INV_Misc_Book_07",
     "Use the standard book icon rather than the invisible custom Talent.blp")
 assert(importer.targetLabel.text:find("Testwarrior",1,true))
@@ -277,4 +292,51 @@ assert(not popup.visible and not importer.input.focused,
     "Escape should cancel the window without sending commands")
 assert(#commands==3)
 
-print("NT1 Bot Talents: toolbar, preview, deliberate Apply and transport safety passed")
+-- Server PR #16: no-code Safety Inspection is separate from NT1 Preview/Apply.
+-- No server mode is guessed or enabled locally; the server may reject it.
+assert(importer:Open())
+assert(importer.input:GetText()=="" and importer.requestedBot=="Testwarrior")
+local beforeInspection=#commands
+importer.safetyButton.scripts.OnClick(importer.safetyButton)
+assert(#commands==beforeInspection+1 and
+    commands[#commands]==".naxxbot talents safetypreview Testwarrior" and
+    importer.status.text:find("Read-only request",1,true) and
+    not importer.status.text:find("Apply-ready",1,true),
+    "Safety Inspection click must send precisely one no-code read-only request")
+assert(importer.input:GetText()=="" and not importer.pendingApply,
+    "Safety Inspection must not require NT1 text or open Apply confirmation")
+importer.input:SetText("NT1:vanilla:warrior:3g-1")
+importer.safetyButton.scripts.OnClick(importer.safetyButton)
+assert(#commands==beforeInspection+2 and
+    commands[#commands]==".naxxbot talents safetypreview Testwarrior",
+    "Safety Inspection must never append the current NT1 code")
+currentTarget={name="Otherwarrior",guid="Player-02",class="WARRIOR"}
+importer.safetyButton.scripts.OnClick(importer.safetyButton)
+assert(#commands==beforeInspection+2 and
+    importer.status.text:find("Safety Inspection.",1,true) and
+    importer.awaitingTarget and importer.awaitingAction=="safetypreview",
+    "Wrong target must guide a manual target switch, not submit a safety command")
+currentTarget={name="Testwarrior",guid="Player-01",class="WARRIOR"}
+importer:OnTargetChanged()
+assert(#commands==beforeInspection+2 and
+    importer.status.text:find("Target verified. Click Safety Inspection.",1,true),
+    "Target-changed event must not auto-dispatch Safety Inspection")
+currentTarget={name="Testwarrior",guid="Player-22",class="WARRIOR"}
+importer.safetyButton.scripts.OnClick(importer.safetyButton)
+assert(#commands==beforeInspection+2 and
+    importer.status.text:find("identity differs",1,true),
+    "Recycled bot name with different GUID must fail closed")
+currentTarget={name="Testwarrior",guid="Player-01",class="MAGE"}
+importer.safetyButton.scripts.OnClick(importer.safetyButton)
+assert(#commands==beforeInspection+2,
+    "Wrong target class must fail closed before diagnostics")
+currentTarget={name="Bot;apply",guid="Player-Unsafe",class="WARRIOR"}
+importer.boundTarget=currentTarget
+importer.requestedBot=currentTarget.name
+local rejected,why=importer:SendSafetyInspection()
+assert(not rejected and why:find("Unsupported bot name",1,true) and
+    #commands==beforeInspection+2,
+    "No punctuation/command injection in safety inspection bot names")
+currentTarget={name="Testwarrior",guid="Player-01",class="WARRIOR"}
+importer.window:Hide()
+print("NT1 Bot Talents: toolbar, preview, Safety Inspection, deliberate Apply and transport safety passed")
