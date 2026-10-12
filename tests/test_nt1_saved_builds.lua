@@ -139,6 +139,26 @@ assert(api:Open())
 assert(api.page==1 and api.importPage.visible and not api.savedPage.visible)
 assert(api.window.height==465 and api.window.width==660)
 assert(api.nameBox.maxLetters==40 and api.input.maxLetters==2048)
+assert(api.importCodePanel and api.importCodePanel.width==616 and
+    api.importCodePanel.position[5]==-87 and
+    api.importNamePanel.height==79 and
+    api.importNamePanel.position[5]==-145 and
+    api.importInfoPanel.height==83 and
+    api.importInfoPanel.position[5]==-227,
+    "Import needs distinct native code, save and status sections")
+assert(api.importIntro.text=="PASTE OR LOAD AN NT1 TALENT CODE" and
+    api.importExample.text:find("NT1:",1,true) and
+    api.importSafety.text=="Apply requires confirmation and a bot backup.",
+    "Import instructions must remain concise with safety warning")
+assert(api.status.position[5]==-238 and
+    api.buildSummary.position[5]==-264 and
+    api.importSafety.position[5]==-291 and
+    api.importInfoPanel.position[5]-api.importInfoPanel.height==-310,
+    "Import messages must fit above footer without overlapping")
+assert(api.input.position[5]==-106 and
+    api.nameBox.position[5]==-149 and
+    api.applyButton.template:find("SecureActionButtonTemplate",1,true),
+    "Importer inputs and secure Apply control must remain intact")
 assert(#commands==0)
 api.input:SetText(mage)
 api.nameBox:SetText("PvE Mage")

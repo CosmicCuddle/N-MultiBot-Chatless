@@ -667,10 +667,15 @@ function Talents:EnsureWindow()
     backupPage:SetPoint("TOPLEFT", window, "TOPLEFT", 0, -85)
     self.backupPage = backupPage
 
-    styledLabel(importPage, "Paste an NT1 code from N Talent Calculator or the website.",
-        22, -23, 610)
-    styledLabel(importPage, "Example (Warrior): " .. EXAMPLE, 22, -66, 610,
-        {0.69, 0.85, 1})
+    -- Page 1 visual polish: three orderly Wrath-native sections.
+    -- Only frames, labels and positions change. The secure Apply button,
+    -- its targeting macro, all actions and their callbacks stay unchanged.
+    self.importIntro=styledLabel(importPage,
+        "PASTE OR LOAD AN NT1 TALENT CODE",
+        22,-20,610,{0.86,0.85,0.79})
+    self.importExample=styledLabel(importPage,
+        "Example: " .. EXAMPLE,22,-59,610,{0.69,0.85,1})
+    self.importCodePanel=listPanel(importPage,22,-87,616,57)
 
     local input = CreateFrame("EditBox", nil, importPage, "InputBoxTemplate")
     input:SetPoint("TOPLEFT", importPage, "TOPLEFT", 32, -106)
@@ -680,7 +685,8 @@ function Talents:EnsureWindow()
     input:SetText("")
     self.input = input
 
-    styledLabel(importPage, "SAVE AS", 22, -158, 140, {1, 0.84, 0.42})
+    self.importNamePanel=listPanel(importPage,22,-145,616,79)
+    styledLabel(importPage, "SAVE AS", 34, -158, 122, {1, 0.84, 0.42})
     local nameBox = CreateFrame("EditBox", nil, importPage, "InputBoxTemplate")
     nameBox:SetPoint("TOPLEFT", importPage, "TOPLEFT", 166, -149)
     nameBox:SetSize(283, 28)
@@ -689,13 +695,15 @@ function Talents:EnsureWindow()
     nameBox:SetText("")
     self.nameBox = nameBox
 
-    self.status = styledLabel(importPage, "No command sent.", 22, -203, 606)
+    self.importInfoPanel=listPanel(importPage,22,-227,616,83)
+    self.status = styledLabel(importPage, "No command sent.",
+        34,-238,590,{0.86,0.85,0.79})
     self.buildSummary = styledLabel(importPage,
-        "Local summary only (not an Apply-ready or level-adjusted plan).",
-        22, -231, 606,
-        {0.69, 0.85, 1})
-    styledLabel(importPage, "Apply requires confirmation and a bot backup.",
-        22, -259, 610, {1, 0.67, 0.44})
+        "Build details appear here (local check only).",
+        34,-264,590,{0.69,0.85,1})
+    self.importSafety=styledLabel(importPage,
+        "Apply requires confirmation and a bot backup.",
+        34,-291,590,{1,0.67,0.44})
 
     local pendingSave
     nameBox:SetScript("OnTextChanged", function() pendingSave = nil end)
@@ -710,7 +718,7 @@ function Talents:EnsureWindow()
                 details.points .. " selected (local) | Role: " .. details.role)
         else
             Talents.buildSummary:SetText(
-                "Local summary only; paste an NT1 code (not server validation).")
+                "Enter a valid NT1 code (local check only).")
         end
     end)
     local function submit(action)

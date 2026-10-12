@@ -143,6 +143,9 @@ currentTarget={name="Actualplayer",guid="Player-99",class="WARRIOR"}
 assert(not importer:Open(),"Do not allow own player character as bot target")
 currentTarget={name="Testwarrior",guid="Player-01",class="WARRIOR"}
 assert(importer:Open(),"Selected bot must open the NT1 paste window")
+assert(importer.importCodePanel and importer.importInfoPanel and
+    importer.importNamePanel and importer.status.position[5]==-238,
+    "NT1 Import visual sections must exist in standalone UI test")
 assert(importer.applyButton and
     importer.applyButton.template:find("SecureActionButtonTemplate",1,true) and
     importer.applyButton.attributes.type1=="macro" and
