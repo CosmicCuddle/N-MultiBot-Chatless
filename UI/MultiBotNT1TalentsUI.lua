@@ -118,8 +118,10 @@ function Talents:SendToTarget(action, text)
     -- Intentional GM/server command path, never a generic executor.
     SendChatMessage(plan.command, "SAY")
     return true, action == "preview" and
-        ("Preview request sent for " .. plan.target.name ..
-            ". Server Preview does not mean Apply-ready.") or
+        -- Keep Page 1 status on one line at the owner's enlarged font.
+        -- The server's actual readiness or refusal is shown in chat.
+        ("Preview sent for " .. plan.target.name ..
+            ". See server chat.") or
         ("Apply request dispatched for " .. plan.target.name ..
             ". Check server chat for success or rejection.")
 end
