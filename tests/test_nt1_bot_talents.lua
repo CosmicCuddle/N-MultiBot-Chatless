@@ -300,7 +300,9 @@ local beforeInspection=#commands
 importer.safetyButton.scripts.OnClick(importer.safetyButton)
 assert(#commands==beforeInspection+1 and
     commands[#commands]==".naxxbot talents safetypreview Testwarrior" and
-    importer.status.text:find("Read-only request",1,true) and
+    importer.status.text:find("Safety request sent for Testwarrior.",1,true) and
+    importer.status.text:find("See server chat.",1,true) and
+    #importer.status.text <= 64 and
     not importer.status.text:find("Apply-ready",1,true),
     "Safety Inspection click must send precisely one no-code read-only request")
 assert(importer.input:GetText()=="" and not importer.pendingApply,
