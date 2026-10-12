@@ -199,10 +199,14 @@ assert(#commands==0,"Opening the paste dialog must never send an apply")
 
 local code="NT1:vanilla:warrior:3g-1"
 importer.input:SetText(code)
-local ok=importer:SendToTarget("preview",importer.input:GetText())
+local ok,previewStatus=importer:SendToTarget("preview",importer.input:GetText())
 assert(ok and #commands==1 and commands[1]==
     ".naxxbot talents preview Testwarrior "..code,
     "Preview should send the exact read-only Naxxramas Core command")
+assert(previewStatus=="Preview sent for Testwarrior. See server chat." and
+    #previewStatus <= 58 and
+    not previewStatus:find("Apply-ready",1,true),
+    "Preview status must remain one line and never claim server approval")
 assert(importer:SendToTarget("preview",code) and #commands==2,
     "Repeat Preview is read-only and does not authorize Apply")
 assert(importer.status and type(StaticPopupDialogs)=="table")
