@@ -71,7 +71,7 @@ end
 function Frame:SetScript(k,fn) self.scripts[k]=fn end
 function Frame:Show() self.visible=true end
 function Frame:Hide() self.visible=false end
-function Frame:CreateFontString() return setmetatable({scripts={}},Frame) end
+function Frame:CreateFontString() return setmetatable({scripts={},parent=self},Frame) end
 function CreateFrame(kind,name,parent,template)
     assert(template~="UIPanelScrollFrameTemplate" or
         (type(name)=="string" and name~=""),
@@ -150,9 +150,14 @@ assert(api.importIntro.text=="PASTE OR LOAD AN NT1 TALENT CODE" and
     api.importExample.text:find("NT1:",1,true) and
     api.importSafety.text=="Apply requires confirmation and a bot backup.",
     "Import instructions must remain concise with safety warning")
-assert(api.status.position[5]==-238 and
-    api.buildSummary.position[5]==-264 and
-    api.importSafety.position[5]==-291 and
+assert(api.status.position[5]==-11 and
+    api.buildSummary.position[5]==-37 and
+    api.importSafety.position[5]==-64 and
+    api.importSaveLabel.position[5]==-13 and
+    api.status.parent==api.importInfoPanel and
+    api.buildSummary.parent==api.importInfoPanel and
+    api.importSafety.parent==api.importInfoPanel and
+    api.importSaveLabel.parent==api.importNamePanel and
     api.importInfoPanel.position[5]-api.importInfoPanel.height==-310,
     "Import messages must fit above footer without overlapping")
 assert(api.input.position[5]==-106 and
