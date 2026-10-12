@@ -1354,6 +1354,7 @@ function MultiBot.InitializeNT1TalentsUI(tRight)
         "INV_Misc_Book_07",
         "NT1 Talents - selected Playerbot" ..
         "\n|cffffffffTarget a bot and paste an NT1 build from N Talent Calculator or the website.|r" ..
+        "\n|cff999999Naxxramas Core manages permission and talent legality.|r" ..
         "\n|cffffaa55Apply requires confirmation; server may still reject.|r" ..
         "\n\n|cffff0000Left-click: open NT1 build paste box|r" ..
         "\n|cff999999Server modes: 0 off; 1 GM Apply; 2 permitted-player Apply.|r" ..
