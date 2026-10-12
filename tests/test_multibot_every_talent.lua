@@ -106,10 +106,30 @@ assert(validSpellbook.disableCount==1 and
     MultiBot.spellbook.name=="Clicked" and #sent==0,
     "Spellbook must tolerate the same stale/missing roster controls")
 
--- The helper should also tolerate an unloaded roster during Talent inspection.
+-- Both legacy tool callbacks must tolerate a roster that vanishes
+-- between opening the per-bot control bar and clicking the tool icon.
 talent.setDisable()
 MultiBot.frames.MultiBar.frames.Units=nil
 talent.doLeft(talent)
 assert(#inspected==2 and #sent==0,
     "Absent roster frame must not crash legacy Talent inspection")
+spellbook.setDisable()
+spellbook.doLeft(spellbook)
+assert(spellbook.state==true and #sent==0,
+    "Absent roster must not crash unconnected Spellbook inspection")
+-- The bridge-connected path must not index the absent roster either.
+spellbook.setDisable()
+MultiBot.bridge.connected=true
+MultiBot.Comm={RequestSpellbook=function(name) return name=="Clicked" end}
+spellbook.doLeft(spellbook)
+assert(spellbook.state==true and #sent==0,
+    "A successful bridge Spellbook request must tolerate absent roster state")
+MultiBot.bridge.connected=false
+MultiBot.Comm=nil
+MultiBot.allowLegacyChatFallback=true
+spellbook.setDisable()
+spellbook.doLeft(spellbook)
+assert(#sent==1 and sent[1][1]=="spells" and sent[1][2]=="WHISPER" and
+    sent[1][4]=="Clicked",
+    "Legacy fallback must still send its original whisper without a roster")
 print("Legacy bot Talent/Spellbook stale-roster regression passed")
