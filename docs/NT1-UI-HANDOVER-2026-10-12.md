@@ -14,6 +14,13 @@ Resume the **MultiBot 4.0.4 NT1 user-interface makeover** from the confirmed cli
 
 **Current next interaction:** The owner has **successfully completed the requested consolidated PR #5 smoke test in WoW 3.3.5a**: original bot Spellbook opened and closed; Set Talents website preset was selected, loaded into Page 1 NT1 Import, and Cancel was used. No new failure was reported. **Do not retest these specific steps by default.** All latest checked code-head CI and documentation-head CI were green (see newest milestone below). Next: perform a non-destructive release-readiness checklist, distinguish owner-confirmed UI/basic client paths from untested NMB1 manual restore and experimental server Apply/rollback, and ask for an explicit decision before any merge or public distribution. Existing approved 54 presets, server sources and published N Addon Collection v2.0.0 remain untouched; keep prior MultiBot and account WTF backups.
 
+## 12 October 2026 — explicit owner decision: server owns NT1 enablement
+
+- Owner confirmed: **“The server should decide what enabled or not.”** Interpretation specific to **NT1 Preview/Apply authorisation**: `NaxxramasCore.BotTalentImport.AccessMode` and server-owned bot/character/Individual Progression/DBC validation remain the authority. `0` (default) denies NT1 server commands; `1` permits authorised GMs; `2` permits GMs and permitted normal players. Do not alter this configuration on the owner's behalf.
+- **MultiBot must retain its Preview and Apply Talents controls and existing safe two-stage confirmation**, secure targeting and local UI functionality. Do not remove/hard-disable the feature in a public package, add a competing client access-mode rule or silently rewrite server permissions. The separate user preference for showing/hiding the NT1 toolbar button is unchanged.
+- The addon cannot infer server approval or success merely because a request was sent. An AccessMode rejection and all legality/ownership failures remain final server decisions. Server-side Apply safety and rollback are **not** proven by the owner's UI testing; no experimental Apply is authorised in this checkpoint.
+- No Lua source, server config/SQL/DBC, approved 54 codes, SavedVariables, PR merge or published N Addon Collection edits were requested or performed here. Next step stays a non-destructive client-only release-readiness assessment followed by explicit owner approval before publication.
+
 ## Exact GitHub checkpoint / test evidence
 
 - At addon-code commit `46e9060345f51fd5262b1480567f200919037407`:
