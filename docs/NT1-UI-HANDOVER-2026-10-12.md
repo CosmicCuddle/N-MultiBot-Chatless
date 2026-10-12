@@ -34,6 +34,13 @@ The immediate next interaction should be: provide the latest standalone test ZIP
 - **Next owner action, unchanged:** load a real long 51-point Warrior/Mage/Warlock website build into Page 1 and share **one screenshot of the entire NT1 Talent Import window at the normal enlarged UI/font scale**. Inspect code input, Save As, local Build summary, status/warning text, Save code and Check target buttons, and bottom navigation for overlap or Lua errors. **Do not confirm Apply**; server `AccessMode=0` can remain. The Page 1 design is **CI-passed but still awaiting in-game visual acceptance**.
 - No Page 4 polish, NMB1 manual import/export exercise, website code changes, server code, SQL, DBC, PR merge, or published N Addon Collection changes were performed in this checkpoint.
 
+## Owner screenshots and observed crash — 12 October 2026 (new branch changes pending QA)
+
+- Actual Warrior **Karnok**, Website Presets `Raid`: all **four** approved builds display, without observed list/footer overlap. Import loads **Protection Warrior Raid**, local 51-point Vanilla/Tank summary, and all expected Page 1 controls are visible; **this does not validate experimental Apply**.
+- Four Page 1 FontStrings (Save As, status, summary, warning) appear too dim because parent-level text is behind their child Frame panels in 3.3.5a. Panels and the original screen coordinates are retained; labels are now children of their corresponding panels, preventing backdrop tinting. Recheck enlarged-font screenshot after the next successful test build.
+- Clicking the **original roster Talent button** showed `Core/MultiBotEvery.lua:595` nil-field error via `Core/MultiBotEngine.lua:1825`. This is the old `InspectUnit` Talent viewer, **not** NT1 Import or final Apply. Its legacy active-roster loop assumed all entries still had a frame and a Talent button. Guard the lookup; apply the same guard to the identical Spellbook button loop. New isolated Lua 5.1 test exercises missing frame/button, SelfBot-style row, valid disable and no chat commands.
+- **QA boundary:** these are new draft-branch source changes. They do **not** inherit green CI or gameplay acceptance from `1f1434f`. Wait for exact-head regression/lint/format, and a new install ZIP, then ask owner to retest the original Talent click and a readable Page 1 screenshot. Do not run experimental Apply, demand deferred NMB1 manual testing, merge PR #5 or change the published collection. Preserve MultiBot/WTF backups and previous working test ZIP.
+
 ## What the project owner has actually confirmed in-game
 
 | Area | Actual client evidence | Status |
