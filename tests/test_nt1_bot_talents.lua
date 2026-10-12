@@ -98,7 +98,11 @@ function UnitIsPlayer(unit) return unit=="target" and currentTarget ~= nil end
 function UnitIsUnit(unit,other) return unit=="target" and other=="player" and currentTarget and currentTarget.name=="Actualplayer" end
 function UnitName(unit) return unit=="target" and currentTarget and currentTarget.name end
 function UnitGUID(unit) return unit=="target" and currentTarget and currentTarget.guid end
-function UnitClass(unit) return unit=="target" and "Warrior","WARRIOR" end
+function UnitClass(unit)
+    if unit~="target" or not currentTarget then return nil,nil end
+    local token=currentTarget.class or "WARRIOR"
+    return token=="MAGE" and "Mage" or "Warrior",token
+end
 function SendChatMessage(command,channel)
     assert(channel=="SAY","NT1 commands must use the actual Naxxramas GM command pathway")
     commands[#commands+1]=command
@@ -197,6 +201,14 @@ currentTarget={name="Testwarrior",guid="Player-03",class="WARRIOR"}
 assert(not importer:SendToTarget("apply",code),
     "Same visible name with a different GUID must not be accepted")
 assert(#commands==2)
+currentTarget={name="Testwarrior",guid="Player-01",class="MAGE"}
+local mageCode="NT1:vanilla:mage:3g-1"
+assert(not importer:SendToTarget("preview",mageCode) and #commands==2,
+    "Same-name/GUID target reporting another class must not send Preview")
+local classMatched,classHint,classGuided=importer:CheckIntendedTarget("apply")
+assert(not classMatched and not classGuided and
+    classHint:find("class differs",1,true) and #commands==2,
+    "Previously bound class cannot be silently replaced on recheck")
 currentTarget={name="Testwarrior",guid="Player-01",class="WARRIOR"}
 
 -- WoW chat has a finite payload: do not issue truncated high-rank NT1 codes.
