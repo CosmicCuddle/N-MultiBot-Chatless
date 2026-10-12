@@ -55,6 +55,11 @@ jobs:
       - name: Run targeted-bot and command safety regressions
         run: lua5.1 tests/test_nt1_bot_talents.lua
 
+      - name: Verify legacy Talent/Spellbook with missing roster entries
+        run: |
+          luac5.1 -p Core/MultiBotEvery.lua
+          lua5.1 tests/test_multibot_every_talent.lua
+
       - name: Run saved builds and website preset browser regression
         run: lua5.1 tests/test_nt1_saved_builds.lua
 
