@@ -162,9 +162,11 @@ assert(importer.nameBox.maxLetters==40 and importer.savedButton and
 assert(popup.width == 660 and popup.height == 465,
     "NT1 popup needs increased vertical room for large WoW UI fonts")
 assert(importer.input.position[5] == -106 and
-    importer.status.position[5] == -203 and
-    importer.targetLabel.position[5] == -68,
-    "NT1 fields must have independent rows without label overlap")
+    importer.status.position[5] == -238 and
+    importer.targetLabel.position[5] == -68 and
+    importer.buildSummary.position[5] == -264 and
+    importer.importSafety.position[5] == -291,
+    "NT1 code, status, build and safety rows must not collide")
 assert(created[1].icon == "INV_Misc_Book_07",
     "Use the standard book icon rather than the invisible custom Talent.blp")
 assert(importer.targetLabel.text:find("Testwarrior",1,true))
