@@ -9,7 +9,7 @@
 - Addon work: draft https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/5. Inspect PR HEAD rather than relying on the older `6a935f1` snapshot in the server audit.
 - Implementation: `UI/MultiBotNT1TalentsUI.lua`; product integration/next actions: root `ROADMAP.md`.
 
-## Current MultiBot transport (unchanged, unstructured)
+## Current MultiBot transport (single SAY commands, no structured acknowledgement)
 
 ```text
 .naxxbot talents preview <online-bot-name> <NT1-code>
