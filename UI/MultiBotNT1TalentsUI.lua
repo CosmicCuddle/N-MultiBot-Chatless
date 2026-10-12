@@ -866,39 +866,47 @@ function Talents:EnsureWindow()
     self.presetCounter = styledLabel(presetPage, "", 239, -302, 190,
         {1, 0.84, 0.42})
 
-    -- Page 4: user-controlled copy/paste backup, with no game commands.
-    styledLabel(backupPage, "BACKUP SAVED BUILDS  |  Plain-text NMB1 format",
-        22, -18, 610)
-    styledLabel(backupPage,
-        "Export to copy, or paste an NMB1 backup to import.",
-        22, -48, 610)
-    -- The Wrath 3.3.5a UIPanelScrollFrameTemplate OnLoad concatenates
-    -- self:GetName() with "ScrollBar". An anonymous frame causes a Lua error.
+    -- Page 4 appearance only. Place dynamic status above the editor so
+    -- large 3.3.5a fonts cannot wrap into the bottom navigation buttons.
+    -- The NMB1 parser, SavedVariables and all button callbacks are unchanged.
+    self.backupHeading = styledLabel(backupPage,
+        "COPY OR PASTE AN NMB1 BACKUP",
+        22, -18, 610, {1, 0.84, 0.42})
+    self.backupStatus = styledLabel(backupPage,
+        "Export all, or paste an NMB1 backup to import.",
+        22, -48, 610, {0.86, 0.85, 0.79})
+    self.backupTextPanel = listPanel(backupPage, 22, -112, 616, 186)
+    -- Like Page 1, this label belongs to its child panel so the panel
+    -- backdrop never darkens it.
+    self.backupTextHeading = styledLabel(self.backupTextPanel,
+        "BACKUP TEXT  |  COPY OR PASTE",
+        12, -12, 582, {0.69, 0.85, 1})
+
+    -- Wrath's UIPanelScrollFrameTemplate MUST have a nonempty name.
+    -- Retain the same global scroll frame and text edit control.
     local backupScroll = CreateFrame("ScrollFrame",
         "MultiBotNT1BackupScrollFrame", backupPage,
         "UIPanelScrollFrameTemplate")
-    backupScroll:SetPoint("TOPLEFT", backupPage, "TOPLEFT", 28, -81)
-    backupScroll:SetSize(590, 206)
+    backupScroll:SetPoint("TOPLEFT", backupPage, "TOPLEFT", 34, -151)
+    backupScroll:SetSize(580, 137)
     local backupText = CreateFrame("EditBox", nil, backupScroll)
     backupText:SetPoint("TOPLEFT", backupScroll, "TOPLEFT", 0, 0)
-    backupText:SetSize(560, 206)
+    backupText:SetSize(548, 137)
     backupText:SetMultiLine(true)
     backupText:SetAutoFocus(false)
     backupText:SetMaxLetters(BACKUP_LIMIT)
     if _G.ChatFontNormal then backupText:SetFontObject(_G.ChatFontNormal) end
     backupText:SetText("")
     backupScroll:SetScrollChild(backupText)
+    self.backupScroll = backupScroll
     self.backupText = backupText
     local pendingImport
     backupText:SetScript("OnTextChanged", function(box)
         pendingImport = nil
         if box.GetStringHeight then
-            box:SetHeight(math.max(206,box:GetStringHeight()+30))
+            box:SetHeight(math.max(137,box:GetStringHeight()+30))
         end
     end)
-    self.backupStatus = styledLabel(backupPage,
-        "Import checks all builds; changes need confirmation.",
-        22, -301, 610)
 
     self.showPage = function(page)
         pendingSave = nil
