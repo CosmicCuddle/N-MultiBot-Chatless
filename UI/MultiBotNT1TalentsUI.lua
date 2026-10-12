@@ -686,7 +686,10 @@ function Talents:EnsureWindow()
     self.input = input
 
     self.importNamePanel=listPanel(importPage,22,-145,616,79)
-    styledLabel(importPage, "SAVE AS", 34, -158, 122, {1, 0.84, 0.42})
+    -- FontStrings must belong to the panel; child Frame backdrops otherwise
+    -- tint their parent-level text under WoW 3.3.5a rendering.
+    self.importSaveLabel=styledLabel(self.importNamePanel,
+        "SAVE AS", 12, -13, 122, {1, 0.84, 0.42})
     local nameBox = CreateFrame("EditBox", nil, importPage, "InputBoxTemplate")
     nameBox:SetPoint("TOPLEFT", importPage, "TOPLEFT", 166, -149)
     nameBox:SetSize(283, 28)
@@ -696,14 +699,14 @@ function Talents:EnsureWindow()
     self.nameBox = nameBox
 
     self.importInfoPanel=listPanel(importPage,22,-227,616,83)
-    self.status = styledLabel(importPage, "No command sent.",
-        34,-238,590,{0.86,0.85,0.79})
-    self.buildSummary = styledLabel(importPage,
+    self.status = styledLabel(self.importInfoPanel, "No command sent.",
+        12,-11,590,{0.86,0.85,0.79})
+    self.buildSummary = styledLabel(self.importInfoPanel,
         "Build details appear here (local check only).",
-        34,-264,590,{0.69,0.85,1})
-    self.importSafety=styledLabel(importPage,
+        12,-37,590,{0.69,0.85,1})
+    self.importSafety=styledLabel(self.importInfoPanel,
         "Apply requires confirmation and a bot backup.",
-        34,-291,590,{1,0.67,0.44})
+        12,-64,590,{1,0.67,0.44})
 
     local pendingSave
     nameBox:SetScript("OnTextChanged", function() pendingSave = nil end)
