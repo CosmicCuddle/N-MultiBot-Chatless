@@ -11,24 +11,24 @@
 
 ## Current MultiBot transport (unchanged, unstructured)
 
-\`\`\`text
+```text
 .naxxbot talents preview <online-bot-name> <NT1-code>
 .naxxbot talents apply <online-bot-name> <NT1-code>
-\`\`\`
+```
 
 **Additional server commands on the newly merged server source (not wired into MultiBot's current buttons):**
 
-\`\`\`text
+```text
 .naxxbot talents project <online-bot-name> <NT1L1-code>
 .naxxbot talents repairpreview <online-altbot-name> <NT1-code>
 .naxxbot talents safetypreview <online-altbot-name>
-\`\`\`
+```
 
 - `project` uses an **explicitly authored NT1L1 rank-purchase sequence**, not an ordinary final-rank NT1 preset. Read-only projection can show a lower-level candidate; **no projection Apply command exists**. Never derive an NT1L1 ordering by sorting an existing website NT1 code.
 - `repairpreview` reads an existing Alt Bot's protected/current talent state while checking a proposed NT1 code; `safetypreview` is a **no-code** Alt Bot risk diagnosis for both talent specs, pets and equipped items. Both are read-only, reject Random Playerbots, and require the **issuing human character** to be in `NaxxramasCore.BotTalentImport.AltBotAllowedPlayers`, including GMs. An eligible non-GM must directly control the bot.
 - The current server returns human-facing chat messages. **No authenticated machine-readable receipt, APPLY_READY token, expiry-bound plan ID or safe projected Apply API was introduced.** Do not implement client-side parsing that treats those messages as an authenticated permission or success signal.
 
-- Addon dispatches these via `SendChatMessage(command, "SAY")`, **never** the original bot whisper or a generic privileged-command bridge. The command must fit the conservative 255-character 3.3.5a message envelope. Do not truncate, split, silently reroute or claim direct server invocation.
+- MultiBot dispatches **only Preview and Apply**, not the three newer diagnostic commands, via `SendChatMessage(command, "SAY")`, **never** the original bot whisper or a generic privileged-command bridge. The command must fit the conservative 255-character 3.3.5a message envelope. Do not truncate, split, silently reroute or claim direct server invocation.
 - Client locally checks the NT1 format, known class, talent rank 1–5, duplicate code tokens, target identity/GUID when present, and full command size. This is **not** DBC verification, ownership authority, IP unlock proof, or level-specific validation.
 - The user explicitly presses Preview for read-only server validation. Current Preview may report a valid code while a subsequent Apply is denied by additional server-side preconditions. Therefore **Preview ≠ APPLY_READY**.
 - Apply's user hardware click may first attempt `/targetexact <roster-bot-name>` through a WoW 3.3.5a `SecureActionButtonTemplate` macro (strictly validated name, configured out of combat). This is a target-selection convenience only: match live name/class, any previously bound GUID, and unchanged NT1 code before the separate StaticPopup; failure falls back to manual targeting instructions. No insecure targeting function is used, and selecting a bot without a click never triggers the macro. Hardware-click targeting and cancel were owner-confirmed for the tested bot in an earlier development ZIP; they do not establish general-combat readiness or server-side Apply success.
