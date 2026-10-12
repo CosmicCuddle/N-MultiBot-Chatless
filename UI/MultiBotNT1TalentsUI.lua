@@ -965,7 +965,7 @@ function Talents:EnsureWindow()
                     Talents.boundTarget.class .. ". Cannot apply.")
             end
         end)
-    self.deleteButton = button(savedPage, "Delete", 355, 17, 130,
+    self.deleteButton = button(savedPage, "Delete", 355, 17, 112,
         function()
             local chosen = Talents.selectedName
             if not chosen or not Talents:GetSavedCode(chosen) then
@@ -986,7 +986,7 @@ function Talents:EnsureWindow()
                 "Could not delete build.")
         end)
 
-    self.backupButton = button(savedPage, "Backup / Import", 499, 17, 137,
+    self.backupButton = button(savedPage, "Backup/Import", 480, 17, 156,
         function() Talents.showPage(4) end)
     self.exportButton = button(backupPage, "Export all", 22, 17, 119,
         function()
@@ -1126,7 +1126,8 @@ function Talents:UpdateSavedPage()
         end
     end
     self.savedPageCounter:SetText("Page " .. self.savedPageIndex ..
-        " / " .. maxPages .. "  (" .. #list .. " builds)")
+        " / " .. maxPages .. "  (" .. #list ..
+        (#list==1 and " build)" or " builds)"))
     if self.selectedName then
         local short=self.selectedName
         if #short>24 then short=short:sub(1,21).."..." end

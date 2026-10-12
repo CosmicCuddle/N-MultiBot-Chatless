@@ -599,5 +599,23 @@ click(again.importButton)
 assert(again:GetSavedCode("Vanilla Fire")==mage and #commands==0)
 click(again.backFromBackup)
 assert(again.page==2 and again.savedPage.visible and #commands==0)
+assert(again.backupButton.text=="Backup/Import" and
+    again.backupButton.width==156 and
+    again.deleteButton.position[4]==355 and
+    again.deleteButton.width==112,
+    "Saved footer buttons must have distinct, readable hit areas")
+-- The real-game screenshot had "1 BUILDS"; test singular and plural.
+local pluralStore=_G.MultiBotNT1SavedBuilds
+_G.MultiBotNT1SavedBuilds={["Only Build"]=mage}
+again.selectedName=nil
+again.savedPageIndex=1
+again:UpdateSavedPage()
+assert(again.savedPageCounter.text:find("(1 build)",1,true),
+    "One saved build must use the singular counter")
+_G.MultiBotNT1SavedBuilds=pluralStore
+again:UpdateSavedPage()
+assert(again.savedPageCounter.text:find("builds)",1,true) and
+    #commands==0,
+    "Multiple saved builds must keep plural count and no server commands")
 print("NT1 account-wide saved builds, website filters and backup/import: all checks passed")
 

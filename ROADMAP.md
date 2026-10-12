@@ -16,7 +16,7 @@ Repository: https://github.com/CosmicCuddle/N-MultiBot-Chatless
 Merged feature branch: feature/nt1-saved-builds-pages; [PR #4](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/4)  
 Status: merged as main commit 178a4c0f0070695eeb493d16aca7bb5c4b7a93cf; [main test/package run 38128866892](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128866892) passed. Main lint passed. No player screenshots/relog verification yet; no standalone stable release or collection update.  
 Baseline for rollback: MultiBot 4.0.3 from main.  
-Next immediate task: **review Saved Builds Page 2 visual polish** in a standalone PR #5 test ZIP. The owner approved the Website Presets list/spacing based on actual Warrior Gorak All and Raid screenshots. Page 2 now uses the same dark list and top status line, with separate class/name/era columns and a visible selected-row indicator. Inspect it in the real WoW 3.3.5a client at the enlarged font size, select a saved name, confirm Load to import still works and that the Delete first-click warning appears **without clicking Delete again**. Previous functional save/load, /reload and relog checks passed. Defer manual NMB1 export/import, as explicitly requested; do not mark it passed. Later style Page 1 Import, then Page 4 appearance independently. Preserve addon/WTF backups, keep draft [PR #5](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/5) unmerged, and leave published N Addon Collection v2.0.0 unchanged.
+Next immediate task: **review the final Saved Builds Page 2 footer text/spacing tweak** in a standalone PR #5 test ZIP, then move to Page 1 Import styling. The owner approved the Website Presets list/spacing based on actual Warrior Gorak All and Raid screenshots. Page 2 now uses the same dark list and top status line, with separate class/name/era columns and a visible selected-row indicator. Inspect it in the real WoW 3.3.5a client at the enlarged font size, select a saved name, confirm Load to import still works and that the Delete first-click warning appears **without clicking Delete again**. Previous functional save/load, /reload and relog checks passed. Defer manual NMB1 export/import, as explicitly requested; do not mark it passed. Later style Page 1 Import, then Page 4 appearance independently. Preserve addon/WTF backups, keep draft [PR #5](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/5) unmerged, and leave published N Addon Collection v2.0.0 unchanged.
 
 ### Requirements and implemented design
 
@@ -50,6 +50,13 @@ Original pinned source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea9
 | .github/workflows/nt1-playerbot-talents.yml | Lua syntax/tests, website snapshot and bundle artifact |
 | README.md | new user instructions, source notes and risks |
 | ROADMAP.md | this permanent maintainer handover |
+
+### 12 October 2026 — Saved Builds screenshot and footer refinement
+
+- **Actual in-game screenshot:** Warrior bot Throgar, Saved Talent Builds with one saved Fury Raid Build selected. Dark native row, visible selected marker, separate WARRIOR / saved name / VANILLA columns, top status, and page/footer controls render with no overlapping elements. This establishes single-build visual layout and selection state on the owner's enlarged client font. Owner has not yet explicitly accepted the whole page or tested 5+ saved entries in game.
+- **Two small visual corrections:** page counter showed `1 BUILDS` when only one entry exists; use singular `1 build` and retain `2+ builds` grammar. `Backup / Import` button text was squeezed against its frame; shorten to `Backup/Import` and increase its width to 156, reducing the adjacent Delete button width to 112 while preserving a 13px gap. All existing actions and confirm safeguards are unchanged.
+- **Regression:** assert singular and plural counters against temporary mock account storage, correct bottom button geometry, continued five-per-page behavior, and zero chat commands. This mock must restore the original account store after the test.
+- **Next:** run CI, test updated Saved Builds at existing UI scale, then progress to Page 1 Import visual polish if approved. Preserve addon/WTF file backups. Owner-deferred NMB1 manual export/import remains untested; PR #5 remains draft and public collection unchanged.
 
 ### 11 October 2026 — Website Presets visual acceptance and Saved Builds polish
 
