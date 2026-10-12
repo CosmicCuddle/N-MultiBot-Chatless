@@ -124,6 +124,39 @@ function Talents:SendToTarget(action, text)
             ". Check server chat for success or rejection.")
 end
 
+-- Optional, deliberately clicked Alt Bot diagnosis. This never reads a
+-- pasted build, previews its legality or sends the destructive Apply command.
+-- The server alone checks mode, issuer ownership, Random/Alt identity and
+-- the exact human AltBotAllowedPlayers list. No client mode detection.
+function Talents:SendSafetyInspection()
+    local target, reason = getTarget()
+    if not target then return false, reason end
+    if not CLASSES[target.class] then
+        return false, "Cannot identify targeted bot class. No command sent."
+    end
+    local bound = self.boundTarget
+    if not bound or bound.name ~= target.name or
+        (bound.guid and bound.guid ~= target.guid) or
+        (bound.class and bound.class ~= target.class) or
+        (self.presetClass and self.presetClass ~= target.class) or
+        (self.requestedBot and
+            string.lower(self.requestedBot) ~= string.lower(target.name)) then
+        return false, "Bot identity changed. Reopen Set Talents."
+    end
+    -- Safe command arguments: never insert punctuation or control chars.
+    if #target.name < 2 or #target.name > 12 or
+        not target.name:match("^[A-Za-z]+$") then
+        return false, "Unsupported bot name for NT1 safety inspection."
+    end
+    local command = ".naxxbot talents safetypreview " .. target.name
+    if #command > MAX_COMMAND_LENGTH then
+        return false, "Safety command exceeds the 3.3.5a chat limit."
+    end
+    SendChatMessage(command, "SAY")
+    return true, "Safety Inspection requested for " .. target.name ..
+        ". Read-only request; server chat reports access and results."
+end
+
 function Talents:DescribeCode(text)
     local code, reason = self:ValidateCode(text)
     if not code then return nil, reason end
@@ -141,6 +174,12 @@ end
 
 local APPLY_CONFIRM_KEY = "MULTIBOT_NT1_APPLY_CONFIRM"
 
+local function actionLabel(action)
+    if action == "preview" then return "Preview." end
+    if action == "safetypreview" then return "Safety Inspection." end
+    return "Apply talents."
+end
+
 -- Roster website presets can open without selecting the corresponding unit.
 -- This is only guidance and secure target binding; no command is ever sent.
 function Talents:CheckIntendedTarget(action)
@@ -155,8 +194,7 @@ function Talents:CheckIntendedTarget(action)
         self.awaitingTarget=true
         self.awaitingAction=action or "apply"
         return false, "Target " .. expectedName .. ", then click " ..
-            (self.awaitingAction=="preview" and "Preview." or
-                "Apply."), true
+            actionLabel(self.awaitingAction), true
     end
     if not CLASSES[current.class] or
         (self.presetClass and current.class~=self.presetClass) then
@@ -217,7 +255,7 @@ function Talents:OnTargetChanged()
         if self.status then
             self.status:SetText(ok and
                 ("Target verified. Click " ..
-                    (action=="preview" and "Preview." or "Apply talents.")) or hint)
+                    actionLabel(action)) or hint)
         end
     end
 end
@@ -776,6 +814,34 @@ function Talents:EnsureWindow()
                 "Target verified. Preview before Apply." or hint)
         end)
 
+    -- Second row of the Save As panel has spare space at enlarged UI scale.
+    -- No existing Preview, secure Apply, Cancel or Saved Builds button moves.
+    -- Request ONLY the server's no-code, read-only Alt Bot audit on click.
+    self.safetyButton = button(importPage, "Safety Inspection", 34, 150, 184,
+        function()
+            local matched,hint,guided =
+                Talents:CheckIntendedTarget("safetypreview")
+            if not matched then
+                Talents.status:SetText(hint)
+                if not guided then message(hint,true) end
+                return
+            end
+            local ok,result = Talents:SendSafetyInspection()
+            Talents.status:SetText(result)
+            message(result,not ok)
+        end)
+    self.safetyButton:SetScript("OnEnter", function(control)
+        if not GameTooltip or not GameTooltip.SetOwner then return end
+        GameTooltip:SetOwner(control,"ANCHOR_RIGHT")
+        GameTooltip:SetText("NT1 Safety Inspection")
+        GameTooltip:AddLine("Read-only Alt Bot talent, pet and equipment report.",1,1,1,true)
+        GameTooltip:AddLine("Requires an updated server and an allowed human character. Random bots are denied.",0.85,0.75,0.52,true)
+        GameTooltip:Show()
+    end)
+    self.safetyButton:SetScript("OnLeave", function()
+        if GameTooltip then GameTooltip:Hide() end
+    end)
+
     self.previewButton = button(importPage, "Preview", 22, 18, 110,
         function()
             local ok,hint,guided=Talents:CheckIntendedTarget("preview")
@@ -1290,7 +1356,8 @@ function MultiBot.InitializeNT1TalentsUI(tRight)
         "\n|cffffffffTarget a bot and paste an NT1 build from N Talent Calculator or the website.|r" ..
         "\n|cffffaa55Apply requires confirmation; server may still reject.|r" ..
         "\n\n|cffff0000Left-click: open NT1 build paste box|r" ..
-        "\n|cff999999Requires Naxxramas Core BotTalentImport AccessMode 1 or 2.|r"
+        "\n|cff999999Server modes: 0 off; 1 GM Apply; 2 permitted-player Apply.|r" ..
+        "\n|cff9999993 GM read-only; 4 permitted-player read-only. Server decides.|r"
     )
     b.doLeft = function() Talents:Open() end
     Talents.mainButton = b
