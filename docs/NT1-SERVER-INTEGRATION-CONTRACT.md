@@ -1,6 +1,6 @@
 # NT1 Playerbot — Client / Server Integration Contract
 
-**Maintainer checkpoint:** 11 October 2026. This document records the approved boundary for MultiBot v4.0.4, not a deployed server handshake. Do not implement proposed fields as though the server already sends them.
+**Maintainer checkpoint:** 12 October 2026, draft PR #5 release-readiness audit. This document records the approved boundary for MultiBot v4.0.4, **not** a deployed server handshake. The UI has had real-client screenshot reviews; experimental server Apply and authenticated receipts remain unverified. Do not implement proposed fields as though the server already sends them.
 
 ## Authoritative upstream references
 
@@ -19,7 +19,7 @@
 - Addon dispatches these via `SendChatMessage(command, "SAY")`, **never** the original bot whisper or a generic privileged-command bridge. The command must fit the conservative 255-character 3.3.5a message envelope. Do not truncate, split, silently reroute or claim direct server invocation.
 - Client locally checks the NT1 format, known class, talent rank 1–5, duplicate code tokens, target identity/GUID when present, and full command size. This is **not** DBC verification, ownership authority, IP unlock proof, or level-specific validation.
 - The user explicitly presses Preview for read-only server validation. Current Preview may report a valid code while a subsequent Apply is denied by additional server-side preconditions. Therefore **Preview ≠ APPLY_READY**.
-- Apply's user hardware click may first attempt `/targetexact <roster-bot-name>` through a WoW 3.3.5a `SecureActionButtonTemplate` macro (strictly validated name, configured out of combat). This is a target-selection convenience only: match live name/class, any previously bound GUID, and unchanged NT1 code before the separate StaticPopup; failure falls back to manual targeting instructions. No insecure targeting function is used, and selecting a bot without a click never triggers the macro. Actual secure-button behaviour awaits client verification.
+- Apply's user hardware click may first attempt `/targetexact <roster-bot-name>` through a WoW 3.3.5a `SecureActionButtonTemplate` macro (strictly validated name, configured out of combat). This is a target-selection convenience only: match live name/class, any previously bound GUID, and unchanged NT1 code before the separate StaticPopup; failure falls back to manual targeting instructions. No insecure targeting function is used, and selecting a bot without a click never triggers the macro. Hardware-click targeting and cancel were owner-confirmed for the tested bot in an earlier development ZIP; they do not establish general-combat readiness or server-side Apply success.
 - The user explicitly presses Apply and confirms a separate StaticPopup. A repeat check of live target and unchanged code occurs on confirmation. A successful `SendChatMessage` means **only that the request was dispatched**, not that talents changed.
 - Code browser, saved build load/delete/save, import/export, All/Raid/Solo filters, and original Bot specs menu **must never dispatch Apply**.
 - Config `NaxxramasCore.BotTalentImport.AccessMode = 0` denies both server commands by default; an addon cannot enable it. A mode of 1/2 permits experimental Apply subject to server checks. The Alt Bot human-character name allowlist defaults to empty.
@@ -30,8 +30,8 @@
 | Capability | State |
 | --- | --- |
 | Legacy NT1 Preview / Apply commands | Implemented in server, Apply experimental |
-| Local import-window confirmation and build summary | Implemented in addon PR #5; not yet in-game verified |
-| Named Saved Builds / NMB1 text backup and website filters | Implemented in addon PR #5; not yet in-game verified |
+| Local import-window confirmation and build summary | Implemented in draft PR #5; layout confirmed in WoW screenshots; target/cancel observed for tested cases; final Apply not tested |
+| Named Saved Builds / NMB1 text backup and website filters | Website filters and Saved Builds basic save/load/relog confirmed in-game; Page 4 empty-editor appearance reviewed; manual NMB1 transfer deferred |
 | Server-backed APPLY_READY / APPLY_BLOCKED / APPLY_SUCCEEDED | Proposed, not implemented |
 | Short-lived server-bound confirmation token, exact applied plan checksum | Proposed, not implemented |
 | Level-30 projection from level-60 source build | Proposed, not implemented |
