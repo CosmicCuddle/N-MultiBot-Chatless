@@ -4,15 +4,15 @@
 **Repository:** [CosmicCuddle/N-MultiBot-Chatless](https://github.com/CosmicCuddle/N-MultiBot-Chatless)  
 **Active draft PR:** [#5 — NT1 class preset and UI development](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/5)  
 **Development branch:** `fix/nt1-confirm-class-package-audit`  
-**Last fully checked addon-code commit:** `46e9060345f51fd5262b1480567f200919037407`  
+**Last fully checked addon-code commit:** `8cd359632b06f6ee17544093a59b15546257a799`  
 **Published collection:** N Addon Collection v2.0.0 — **not modified**  
 **Delivery status:** Draft / unmerged / unreleased
 
 ## Purpose and current next step
 
-Resume the **MultiBot 4.0.4 NT1 user-interface makeover**. The Website Class Presets page was approved in-game, and the Saved Talent Builds page was inspected in-game. The newly redesigned **Page 1 — NT1 Talent Import** has **passed Lua 5.1 regression tests, lint and format**, but has **NOT yet been checked visually in WoW**. Do not advance to Page 4 or publish until Page 1 has been inspected at the owner's enlarged/stylised client font size.
+Resume the **MultiBot 4.0.4 NT1 user-interface makeover** from the confirmed client QA checkpoint. The Website Class Presets page and **Page 1 — NT1 Talent Import** appearance have now been inspected in WoW 3.3.5a at the owner's enlarged font and accepted for the views tested. The original Talent inspection button's nil-frame regression was corrected and the owner confirmed it now opens the native talents UI. The Saved Builds page was previously inspected and its basic save/load plus relog workflow accepted. Do not infer that server Apply, final Saved Builds footer details, Page 4 manual import/export or all bot scenarios are tested.
 
-The immediate next interaction should be: provide the latest standalone test ZIP from the checked PR workflow, ask the owner to keep the existing `Interface/AddOns/MultiBot` and account `WTF` SavedVariables backups, close WoW before replacing files, then show the NT1 Talent Import window with a **real long 51-point NT1 code loaded**. Check the code field, Save As input, Build summary, status, safety text, Save code / Check target buttons and bottom navigation for overlap, readability and Lua errors. **Do not test final Apply** during this visual checkpoint.
+The immediate next interaction should be to **offer optional Page 4 Backup/Import appearance polish**, using the same stock Wrath style as the accepted pages; no manual NMB1 copy/export/import is required because the owner deferred that exercise. Wait for the owner's preference before editing Page 4. Alternatively, review remaining features and release-readiness gaps. Keep the active PR draft/unmerged, public N Addon Collection v2.0.0 untouched, and server Apply disabled/not exercised for UI tests. Retain prior `MultiBot` and account `WTF` SavedVariables backups before installing future test builds.
 
 ## Exact GitHub checkpoint / test evidence
 
@@ -43,6 +43,14 @@ The immediate next interaction should be: provide the latest standalone test ZIP
 - **Successful exact-code-head verification:** source/regression HEAD `8cd359632b06f6ee17544093a59b15546257a799` has green [NT1 Lua 5.1, legacy Talent/Spellbook regression and package Actions #38241086093](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38241086093), [Lua Lint #38241085888](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38241085888) and [Lua Format #38241086154](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38241086154). Workflow artifact `multibot-nt1-talents-test` **ID `11742903470`** uploaded; its inner `MultiBot-NT1-Talents-test.zip` was inspected separately: 322 ZIP entries, single `MultiBot/` root, all manifest dependencies, CRC/integrity passed, corrected guard and label-parenting present. The standalone **inner** ZIP was supplied to the owner for real-game QA. This is not a release or proof of in-game success. The new regression first failed because its isolated mock lacked existing `MultiBot.auto` state; `8cd3596` corrected the mock, and every check now passes.
 
 
+## 12 October 2026 — owner-confirmed corrected client test: Page 1 and original Talent
+
+- **Owner response after the corrected PR #5 test build:** “Yes works fine now”, accompanied by a native Talent UI screenshot for **Warrior Throgar** and a fully legible **NT1 Talent Import** screenshot for **Warrior Karnok**.
+- **Original Talent button:** the standard Blizzard/playerbot talent-inspection view now opens and displays Throgar's three talent trees. The previously observed `Core/MultiBotEvery.lua:595` nil-field error was not reported on this test. The added Spellbook guard remains covered by Lua 5.1 regression, but was not independently rechecked in WoW.
+- **Page 1 accepted for the demonstrated layout:** Karnok's approved `PROTECTION WARRIOR RAID` build appears in the code and Save As fields; `SAVE AS`, status, 51 selected-points local class/era/role summary and orange warning are clearly visible above their section backgrounds. Code panel, Check target, Save code, Preview, Apply talents, Cancel and Saved Builds buttons have no apparent overlap at the enlarged font size.
+- **Evidence and precise boundary:** [NT1 Lua 5.1/package #38241086093](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38241086093), [lint #38241085888](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38241085888) and [format #38241086154](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38241086154) all passed at **addon-code commit `8cd359632b06f6ee17544093a59b15546257a799`**; artifact `multibot-nt1-talents-test` **ID `11742903470`** contains the corrected client test package. Real-client **visual and old Talent opening** confirmed only for the shown scenarios. Neither screenshot proves actual server NT1 Apply, safe persistence, talent DBC legality, server rollback or save overwrite/delete. Preserve earlier secure-target and saved-build confirmations as their own separate checkpoints.
+- **Next task:** optionally polish Page 4 Backup/Import appearance in a small reversible UI-only change *if requested*, keeping NMB1 import/export safeguards and SavedVariables untouched. Do not require full manual NMB1 testing (owner deferred it). Page 2's latest footer adjustment remains to be visually checked when convenient; do not hold up the current acceptance for it. Do not merge PR #5, modify released N Addon Collection, alter any of 54 exact preset codes or change server/SQL/DBC/Playerbots.
+
 ## What the project owner has actually confirmed in-game
 
 | Area | Actual client evidence | Status |
@@ -52,13 +60,14 @@ The immediate next interaction should be: provide the latest standalone test ZIP
 | Saved Talent Builds / Page 2 | Screenshot of Warrior Throgar with selected “Fury Raid Build”: readable separate class, name, Vanilla era; selected green row and footer are visible. | **Shown in-game; final minor footer fixes not separately retested** |
 | Saved Builds behaviour | Save code -> browse -> select -> Load to import; survives `/reload` and a full logout/login. | **Owner-confirmed functional tests passed** |
 | Secure auto-targeting | Apply button's hardware-click secure `/targetexact` targeted the named bot; a second Apply click opened the correct confirmation and Cancel worked. | **Owner-confirmed on an earlier development ZIP; preserve** |
-| Import / Page 1 visual makeover | Three new dark code/name/status sections have passed automation. | **Awaiting real-client screenshot and acceptance** |
+| Import / Page 1 visual makeover | Screenshot of Karnok's long Protection Warrior Raid import at enlarged font: three panels, bright Save As/status/summary/warning, 51 local points, all controls readable with no overlap. Owner: “Yes works fine now”. | **In-game appearance accepted for shown view** |
+| Original Talent inspection button | Original nil-field crash at `Core/MultiBotEvery.lua:595` corrected; screenshot shows Throgar's native talent UI opened and owner confirms working. | **Observed working for tested click; other roster cases not exhaustively tested** |
 | Saved Builds Backup/Import / Page 4 | Automated Lua coverage exists, but the owner found the manual NMB1 export/import exercise unnecessarily involved and **explicitly deferred it**. | **Not manually tested; do not insist on it or claim it passed** |
 | Final experimental server-side talent Apply | No comprehensive server APPLY_READY/rollback acceptance. | **Not proven; avoid gameplay mutation for UI tests** |
 
 ## Four-page interface
 
-1. **Page 1 — NT1 Talent Import.** Accepts/pastes a code and Save As name, displays local class/era/selected points/role. New visual structure at code panel y=-87 (height 57), name panel y=-145 (height 79), and information panel y=-227 (height 83). Informational lines at y=-238, -264 and -291. Fields, button callbacks and secure Apply control remain unchanged. This is the next real-client visual test.
+1. **Page 1 — NT1 Talent Import.** Accepts/pastes a code and Save As name, displays local class/era/selected points/role. New visual structure at code panel y=-87 (height 57), name panel y=-145 (height 79), and information panel y=-227 (height 83). Informational lines at y=-238, -264 and -291. Fields, button callbacks and secure Apply control remain unchanged. The visual layout is owner-accepted for the demonstrated Karnok screenshot; experimental server Apply remains unverified.
 2. **Page 2 — Saved Talent Builds.** Account-wide `MultiBotNT1SavedBuilds`, five rows/page, separate class/name/era, selected green stripe and text indicator, Load to import and two-click Delete. Latest visual fixes use `1 build` versus `N builds` and widened `Backup/Import` text/button. Do not alter stored data or overwrite/delete existing entries casually.
 3. **Page 3 — Website Class Presets.** Owner-approved Wrath-style dark list, Raid/Solo tabs and labels, five rows/page, single-click **load into Page 1**, and **Bot specs** fallback to the original Playerbots selector. Clicking a row never applies talents. Footer-overlap fix has been visually accepted.
 4. **Page 4 — Backup/Import.** NMB1 account-wide text export/import, maximum text size checks and overwrite safeguards in existing code. **Owner opted not to perform the full manual test**. Retain feature and regression coverage, but do not demand that the owner carry out the export/import procedure.
@@ -96,10 +105,10 @@ The immediate next interaction should be: provide the latest standalone test ZIP
 ## Safe continuation and rollback
 
 1. Read this handover and the root `ROADMAP.md`, confirm the newest PR #5 HEAD, CI checks and packaged ZIP. Use the current branch, not `main` or an earlier Actions run.
-2. Ask for a **single screenshot of Page 1 NT1 Import** after loading a long Warrior/Mage/Warlock preset, at the existing enlarged UI/font scale. Check visible text, header separator, three panels, any overlap, editing and Save code button position. Test buttons without sending Apply.
+2. Page 1's revised layout and old Talent viewer are **now observed working in-game** on the corrected test ZIP. Offer **Page 4 appearance polish only if the owner wants it**; do not request another Page 1 screenshot without a new regression.
 3. If an overlap or Lua error occurs, make a small **reversible UI-only** fix and extend Lua 5.1 regression assertions. Avoid wholesale restyling and do not affect addon state.
 4. Run the exact-head NT1 regression/ZIP, Lua lint and Lua format GitHub Actions; verify all pass **at the same head**. Label real-game acceptance separately from CI success.
-5. If Page 1 is accepted, offer optional Page 4 **appearance** polish (not compulsory NMB1 functional import/export testing), or review remaining user-requested features before release planning.
+5. Page 1 was accepted for the shown Warrior screenshot. Wait for owner choice between **optional Page 4 appearance polish** (no NMB1 functional copy/import/export test required) and reviewing remaining changes before release planning. Never merge or publish without explicit approval.
 6. Recommend a simple file-copy backup of `Interface/AddOns/MultiBot` and account `WTF` SavedVariables before installing new test builds; retain previous working test ZIP/commit. No live character talent mutation is required for visual testing.
 
 ## Authoritative files and links
@@ -111,6 +120,6 @@ The immediate next interaction should be: provide the latest standalone test ZIP
 - [Secure target / Apply UI regression tests](../tests/test_nt1_bot_talents.lua)
 - [Client/server contract](NT1-SERVER-INTEGRATION-CONTRACT.md)
 - [Active draft PR #5](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/5)
-- [Latest green addon-code package](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38237354275)
+- [Latest verified addon-code package and client QA build](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38241086093)
 
 **Maintenance rule:** This document records the actual state and owner-tested acceptance at the checkpoint above. Subsequent commits must update the roadmap and distinguish CI-only passes from verified WoW-client results.
