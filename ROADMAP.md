@@ -4,7 +4,7 @@ Repository: https://github.com/CosmicCuddle/N-MultiBot-Chatless
 Client: World of Warcraft 3.3.5a (Interface 30300, Lua 5.1)  
 Current main commit: 7bc9baaf9e4f2e8f97c61ce475db2cdea6671dd5 (post-merge roadmap update; PR #4 merged at 178a4c0f0070695eeb493d16aca7bb5c4b7a93cf); previous PR #3 7903afb2b3145dc27497f953f976a783fac7a11e, PR #2 75a3cf4c96ff53f4189a9c33d1327095ea0763f2 and PR #1 e33e87954cb53e5c8cb21b694faae37653dea180  
 Current main version: MultiBot 4.0.4 — Saved Builds and website presets merged and main CI passed; live-client tests still pending  
-Last maintained: 12 October 2026 — legacy Talent inspector fix and NT1 Import appearance accepted in game on draft PR #5  
+Last maintained: 12 October 2026 — consolidated PR #5 Spellbook/preset smoke test owner-confirmed; preparing non-destructive release-readiness review  
 Public suite baseline: N Addon Collection v2.0.0, which still includes approved MultiBot 4.0  
 Author and credit lineage: Nico Löbbert, Wishmaster117/TheWarlock, CosmicCuddle
 
@@ -16,7 +16,7 @@ Repository: https://github.com/CosmicCuddle/N-MultiBot-Chatless
 Merged feature branch: feature/nt1-saved-builds-pages; [PR #4](https://github.com/CosmicCuddle/N-MultiBot-Chatless/pull/4)  
 Status: merged as main commit 178a4c0f0070695eeb493d16aca7bb5c4b7a93cf; [main test/package run 38128866892](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38128866892) passed. Main lint passed. No player screenshots/relog verification yet; no standalone stable release or collection update.  
 Baseline for rollback: MultiBot 4.0.3 from main.  
-Next immediate task: **owner-side smoke test of the verified batched NT1 PR #5 test ZIP**: with WoW closed, back up old MultiBot and account WTF, install the inner ZIP; click original Spellbook open/close, browse any suitable bot's Set Talents website preset into Page 1, then Cancel. No final Apply or manual NMB1 exercise. If clean, review remaining explicit owner release decisions, but **do not merge draft PR #5 or publish N Addon Collection without permission**. Exact code checkpoint `90f5e17` and green CI/package checks are documented below.
+Next immediate task: **non-destructive final draft PR #5 release-readiness review, not merge or release**. The owner confirmed the consolidated test ZIP successfully opens/closes the original Spellbook and loads a class-appropriate Website Preset into Page 1 followed by Cancel; no new error was reported. All exact-code-and-documentation-head Lua 5.1, lint and format checks passed. These tested interactions now count as owner-confirmed; do not request them again without a new code regression. Prepare a clear checklist separating accepted four-page visual/basic UI work and safeguards from unverified optional NMB1 manual import/export (owner explicitly deferred), class-wide/out-of-combat and combat coverage, actual server NT1 Apply, authenticated result feedback and verified rollback. Request separate explicit owner approval before merging PR #5, publishing a standalone release, or updating N Addon Collection v2.0.0. Retain tested addon + account WTF backups; no server/SQL/DBC/Playerbots changes.
 
 ### Requirements and implemented design
 
@@ -50,6 +50,14 @@ Original pinned source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea9
 | .github/workflows/nt1-playerbot-talents.yml | Lua syntax/tests, website snapshot and bundle artifact |
 | README.md | new user instructions, source notes and risks |
 | ROADMAP.md | this permanent maintainer handover |
+
+### 12 October 2026 — owner confirms consolidated PR #5 in-game smoke test
+
+- **Confirmation directly from owner:** “I can confirm i was able to do those things.” This responds to the exact requested quick test with the consolidated `N-MultiBot-Chatless-PR5-Bulk-Audit-Test.zip`: (1) open **and close** an existing Playerbot's **original Spellbook** tool; (2) open its **Set Talents** class-appropriate Website Presets browser, choose a build and observe it loaded into NT1 Import Page 1; (3) press **Cancel** rather than Apply. Mark these interactions **owner-confirmed in-game**. The owner did not report an error on these steps. Do **not** infer that the full NMB1 flow, all classes, out-of-range/combat targeting or server Apply were tested.
+- **Exact code checkpoint unchanged:** `90f5e1795bd4c3b07ee6e45e7a332e91c5e21811` introduced the bound-class and missing-roster Spellbook safety regressions. At latest pre-confirmation documentation HEAD `36cec3a694a47329ff72b7d8ac539a866a0ebbfb`, [Lua 5.1 regressions + packaging #38246498705](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38246498705), [Lua lint #38246498629](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38246498629), and [Lua format #38246498677](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38246498677) **all passed**. No new addon code changes were needed from the in-game report; this checkpoint is documentation-only.
+- **Owner-reviewed UI status:** Page 1 Import (Warrior and Priest screenshots), Page 3 Website Presets, Page 2 Saved Builds selected-row view, and Page 4 empty Backup/Import editor view have been seen at the user's enlarged 3.3.5a font scale. The owner accepted the Page 4 appearance; earlier original Talent inspector regression was also confirmed fixed. Retain the distinction between **visual/basic interaction acceptance** and **untried long-text edits, overwrite/delete, NMB1 manual restore, all characters/specs, and live Apply**.
+- **Release-readiness status:** candidate for **owner review of draft client-side PR changes**, not a production readiness declaration. The owner explicitly deferred the manual NMB1 exercise and did not approve release/merger or client/server Apply. No actual bot talent change or server-backed success/rollback proof was obtained. Next step: finish a non-destructive gate review and ask what the owner wants to do with PR #5; do not publish automatically.
+- **Rollback and scope:** keep previous verified MultiBot add-on folder/test ZIP and account `WTF` SavedVariables backup; draft PR #5 remains open and unmerged, N Addon Collection v2.0.0 unchanged. Mod-Naxxramas-Core, Playerbots, SQL, DBC and the 54 exact preset codes untouched.
 
 ### 12 October 2026 — batched audit green, package verified, awaiting short in-client smoke test
 
