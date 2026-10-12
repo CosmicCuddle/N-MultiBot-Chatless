@@ -287,6 +287,29 @@ function MultiBot.RefreshEveryGroupActions()
 	return refreshed
 end
 
+-- Roster entries can outlive their frames during filtering/rejoin, and
+-- SelfBot/compact bars do not always create the legacy tool buttons.
+-- Skipping an absent button is safer than aborting InspectUnit/Spellbook.
+local function disableOtherRosterToolButtons(toolName)
+	local mainBar = MultiBot.frames and MultiBot.frames["MultiBar"]
+	local units = mainBar and mainBar.frames and mainBar.frames["Units"]
+	local actives = MultiBot.index and MultiBot.index.actives
+	if not units or type(actives) ~= "table" then return end
+
+	local playerName = UnitName("player")
+	for _, name in pairs(actives) do
+		local unitButton = units.buttons and units.buttons[name]
+		local unitFrame = units.frames and units.frames[name]
+		if unitButton and unitButton.name ~= playerName and unitFrame
+			and type(unitFrame.getButton) == "function" then
+			local toolButton = unitFrame.getButton(toolName)
+			if toolButton and type(toolButton.setDisable) == "function" then
+				toolButton.setDisable()
+			end
+		end
+	end
+end
+
 MultiBot.addEvery = function(pFrame, pCombat, pNormal)
 
     local isSelfBot = (pFrame.getName() == UnitName("player"))
@@ -551,11 +574,7 @@ MultiBot.addEvery = function(pFrame, pCombat, pNormal)
 			pButton.setDisable()
 		else
 			local tUnits = MultiBot.frames["MultiBar"].frames["Units"]
-			for key, value in pairs(MultiBot.index.actives) do
-				if(tUnits.buttons[value].name ~= UnitName("player")) then
-					tUnits.frames[value].getButton("Spellbook").setDisable()
-				end
-			end
+			disableOtherRosterToolButtons("Spellbook")
 
 			pButton.setEnable()
 			MultiBot.spellbook.name = pButton.getName()
@@ -589,12 +608,7 @@ MultiBot.addEvery = function(pFrame, pCombat, pNormal)
 			MultiBot.talent:Hide()
 			MultiBot.talent.doClear()
 
-			local tUnits = MultiBot.frames["MultiBar"].frames["Units"]
-			for key, value in pairs(MultiBot.index.actives) do
-				if(tUnits.buttons[value].name ~= UnitName("player")) then
-					tUnits.frames[value].getButton("Talent").setDisable()
-				end
-			end
+			disableOtherRosterToolButtons("Talent")
 
 			InspectUnit(MultiBot.toUnit(pButton.getName()))
 			pButton.setEnable()
