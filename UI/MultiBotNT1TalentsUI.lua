@@ -98,6 +98,11 @@ function Talents:PrepareCommand(action, text)
         (self.boundTarget.guid and target.guid ~= self.boundTarget.guid) then
         return nil, "Target changed. Reopen Talents for the correct bot."
     end
+    -- A matching name/GUID is insufficient when class identity is
+    -- inconsistent: never redirect an old confirmation to another class.
+    if self.boundTarget.class and target.class ~= self.boundTarget.class then
+        return nil, "Target class changed. Reopen Talents for the correct bot."
+    end
     local code, invalid = self:ValidateCode(text, target.class)
     if not code then return nil, invalid end
     local command = ".naxxbot talents " .. action .. " " .. target.name .. " " .. code
@@ -168,6 +173,12 @@ function Talents:CheckIntendedTarget(action)
         self.awaitingTarget=false
         self.awaitingAction=nil
         return false, "Bot identity differs. Reopen Set Talents.", false
+    end
+    if self.boundTarget and self.boundTarget.class and
+        self.boundTarget.class~=current.class then
+        self.awaitingTarget=false
+        self.awaitingAction=nil
+        return false, "Bot class differs. Reopen Set Talents.", false
     end
     self.boundTarget=current
     self.awaitingTarget=false
