@@ -331,7 +331,10 @@ importer.safetyButton.scripts.OnClick(importer.safetyButton)
 assert(#commands==beforeInspection+2,
     "Wrong target class must fail closed before diagnostics")
 currentTarget={name="Bot;apply",guid="Player-Unsafe",class="WARRIOR"}
-importer.boundTarget=currentTarget
+-- Mock UnitClass returns an uppercase WoW token; the actual bound class
+-- is always normalized to lowercase by getTarget() in the real client.
+importer.boundTarget={name=currentTarget.name,guid=currentTarget.guid,
+    class="warrior"}
 importer.requestedBot=currentTarget.name
 local rejected,why=importer:SendSafetyInspection()
 assert(not rejected and why:find("Unsupported bot name",1,true) and
