@@ -153,8 +153,10 @@ function Talents:SendSafetyInspection()
         return false, "Safety command exceeds the 3.3.5a chat limit."
     end
     SendChatMessage(command, "SAY")
-    return true, "Safety Inspection requested for " .. target.name ..
-        ". Read-only request; server chat reports access and results."
+    -- The Page 1 status is one line high at enlarged 3.3.5a font scale.
+    -- Avoid wrapping into the local build-summary label underneath.
+    return true, "Safety request sent for " .. target.name ..
+        ". See server chat."
 end
 
 function Talents:DescribeCode(text)
