@@ -610,8 +610,37 @@ assert(again:Open())
 click(again.savedButton)
 click(again.backupButton)
 assert(again.page==4 and again.backupPage.visible and again.backupText.multiline)
+-- Page 4 styling is strictly visual: status is at the TOP, the editor
+-- has its own Wrath-native panel, and no text can sit in footer controls.
+assert(again.backupHeading and
+    again.backupHeading.text=="COPY OR PASTE AN NMB1 BACKUP" and
+    again.backupHeading.position[5]==-18 and
+    again.backupStatus.position[5]==-48 and
+    again.backupStatus.parent==again.backupPage,
+    "NMB1 heading/status must appear above the editor")
+assert(again.backupTextPanel and again.backupTextPanel.width==616 and
+    again.backupTextPanel.height==186 and
+    again.backupTextPanel.position[5]==-112 and
+    again.backupTextHeading.parent==again.backupTextPanel and
+    again.backupTextHeading.position[5]==-12 and
+    again.backupTextPanel.position[5]-again.backupTextPanel.height==-298,
+    "Native backup editor panel must not collide with footer controls")
+assert(again.backupScroll and again.backupScroll.position[4]==34 and
+    again.backupScroll.position[5]==-151 and
+    again.backupScroll.width==580 and
+    again.backupScroll.height==137 and
+    again.backupText.maxLetters==30000 and
+    again.backupText.height==137,
+    "Keep the named scrolling text editor, its size and 30 KB limit")
+assert(again.exportButton.position[4]==22 and
+    again.importButton.position[4]==152 and
+    again.backFromBackup.position[4]==315 and
+    again.closeBackup.position[4]==475 and
+    #commands==0,
+    "Backup footer callbacks and no-server-command boundary unchanged")
 assert(_G.MultiBotNT1BackupScrollFrame and
-    _G.MultiBotNT1BackupScrollFrame.scrollChild==again.backupText,
+    _G.MultiBotNT1BackupScrollFrame.scrollChild==again.backupText and
+    again.backupScroll==_G.MultiBotNT1BackupScrollFrame,
     "Backup page requires named 3.3.5a-compatible scroll frame")
 click(again.exportButton)
 assert(again.backupText.text:find("^NMB1\n") and
