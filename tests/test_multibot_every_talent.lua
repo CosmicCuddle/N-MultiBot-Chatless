@@ -54,6 +54,7 @@ MultiBot = {
     index={actives={"Clicked","NoFrame","NoTalent","NoRosterButton","Player","Validbot"}},
     allowLegacyChatFallback=false,
     bridge={connected=false},
+    auto={},
     talent={Hide=function() end,doClear=function() end},
     spellbook={Hide=function() end},
 }
