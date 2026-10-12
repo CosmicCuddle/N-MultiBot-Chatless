@@ -340,8 +340,11 @@ assert(MultiBot.NT1CompletionPresetSource==
 -- Every bundled preset must remain valid and fit the existing transport.
 for _,entry in ipairs(MultiBot.NT1WebsitePresets) do
     assert(again:ValidateCode(entry.code,entry.class))
-    assert(#(".naxxbot talents preview Examplebot "..entry.code)<=255,
-        "Bundled website code cannot fit the supported SAY transport")
+    -- TwelveCharsX is 12 ASCII characters: the maximum length accepted
+    -- by secure /targetexact, and must fit the same single SAY payload.
+    assert(#(".naxxbot talents preview TwelveCharsX "..entry.code)<=255 and
+        #(".naxxbot talents apply TwelveCharsX "..entry.code)<=255,
+        "Bundled preset exceeds the SAY envelope for a 12-character bot")
     local points,seen=0,{}
     for token in (entry.code:match("^NT1:vanilla:[a-z]+:(.+)$").."."):gmatch("(.-)%.") do
         local id,rank=token:match("^([0-9a-z]+)%-([1-5])$")
