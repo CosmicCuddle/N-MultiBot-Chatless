@@ -573,7 +573,9 @@ MultiBot.addEvery = function(pFrame, pCombat, pNormal)
 			MultiBot.spellbook:Hide()
 			pButton.setDisable()
 		else
-			local tUnits = MultiBot.frames["MultiBar"].frames["Units"]
+			local tMain = MultiBot.frames and MultiBot.frames["MultiBar"]
+			local tUnits = tMain and tMain.frames and tMain.frames["Units"]
+			local rosterButton = tUnits and tUnits.buttons and tUnits.buttons[pButton.getName()]
 			disableOtherRosterToolButtons("Spellbook")
 
 			pButton.setEnable()
@@ -582,15 +584,15 @@ MultiBot.addEvery = function(pFrame, pCombat, pNormal)
 			local tBridge = MultiBot and MultiBot.bridge or nil
 			local tComm = MultiBot and MultiBot.Comm or nil
 			if(tBridge and tBridge.connected and tComm and tComm.RequestSpellbook and tComm.RequestSpellbook(pButton.getName())) then
-				tUnits.buttons[MultiBot.spellbook.name].waitFor = ""
+				if rosterButton then rosterButton.waitFor = "" end
 				return
 			end
 
 			if(MultiBot.allowLegacyChatFallback == true) then
-				tUnits.buttons[MultiBot.spellbook.name].waitFor = "SPELLBOOK"
+				if rosterButton then rosterButton.waitFor = "SPELLBOOK" end
 				SendChatMessage("spells", "WHISPER", nil, pButton.getName())
-			else
-				tUnits.buttons[MultiBot.spellbook.name].waitFor = ""
+			elseif rosterButton then
+				rosterButton.waitFor = ""
 			end
 		end
 	end
