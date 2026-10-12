@@ -51,6 +51,12 @@ Original pinned source: assets/naxx-talent-sets-full-sync.js at commit b77f25ea9
 | README.md | new user instructions, source notes and risks |
 | ROADMAP.md | this permanent maintainer handover |
 
+### Maintainer handover (12 October 2026)
+
+- Official continuation reference: [`docs/NT1-UI-HANDOVER-2026-10-12.md`](docs/NT1-UI-HANDOVER-2026-10-12.md), covering current PR #5 head, exact CI runs/artifact, owner-confirmed in-game tests, 54 owner-approved preset provenance, secure target/Apply invariants, separate server integration and rollback rules.
+- **Important correction:** Page 1 first UI regression at `0f9a56e` failed on an outdated mock assertion, subsequently corrected by `46e9060`; exact-head [NT1](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38237354275), [lint](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38237354196) and [format](https://github.com/CosmicCuddle/N-MultiBot-Chatless/actions/runs/38237354194) all **pass**. In-game Page 1 visual review **still pending**. Do not confuse the earlier failed CI with current status or infer real-client approval from tests.
+- The manual NMB1 export/import exercise remains **owner-deferred**, not a blocker for the next Page 1 screenshot. Retain existing back-up and final-Apply safety boundaries. Draft PR #5 remains unmerged; N Addon Collection v2.0.0 untouched.
+
 ### 12 October 2026 — first NT1 Import page visual polish
 
 - **Next planned makeover after accepted Website Presets and in-game Saved Builds appearance:** introduce three visually separated stock Wrath tooltip-border panels on Page 1: NT1 code entry, Save As with original Save code and Check target controls, and local status/build summary/safety text. These are drawn as ordinary non-interactive frames; existing input fields retain their size/position and existing action buttons keep their original callbacks, template and geometry.
