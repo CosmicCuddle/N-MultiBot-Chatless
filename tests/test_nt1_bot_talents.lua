@@ -4,6 +4,8 @@ MultiBot = {}
 UISpecialFrames = {}
 StaticPopupDialogs = {}
 local activeConfirmation
+local mockTime=100
+function GetTime() return mockTime end
 function StaticPopup_Show(key, text)
     assert(StaticPopupDialogs[key] and type(text)=="string")
     activeConfirmation = {key=key,text=text}
@@ -302,6 +304,19 @@ assert(importer:Open())
 assert(importer.input:GetText()=="" and importer.requestedBot=="Testwarrior")
 local beforeInspection=#commands
 importer.safetyButton.scripts.OnClick(importer.safetyButton)
+assert(importer.page==5 and importer.reportPage.visible and
+    not importer.importPage.visible and
+    importer.title.text=="SAFETY INSPECTION REPORT" and
+    importer.safetyReportStatus.text:find("Waiting",1,true),
+    "Safety request must open the fifth read-only report page")
+assert(importer.window.registeredEvents.CHAT_MSG_SYSTEM and
+    importer.safetyReportScroll.name=="MultiBotNT1SafetyReportScrollFrame" and
+    importer.safetyReportScroll.scrollChild==importer.safetyReportText and
+    importer.safetyReportText.multiline and
+    importer.safetyReportText.maxLetters==24000 and
+    importer.safetyReportPanel.width==616 and
+    importer.safetyReportText.parent==importer.safetyReportScroll,
+    "Report must use a named 3.3.5a scroll frame and a bounded selectable editor")
 assert(#commands==beforeInspection+1 and
     commands[#commands]==".naxxbot talents safetypreview Testwarrior" and
     importer.status.text:find("Safety request sent for Testwarrior.",1,true) and
@@ -311,11 +326,62 @@ assert(#commands==beforeInspection+1 and
     "Safety Inspection click must send precisely one no-code read-only request")
 assert(importer.input:GetText()=="" and not importer.pendingApply,
     "Safety Inspection must not require NT1 text or open Apply confirmation")
+local function systemLine(line)
+    importer.window.scripts.OnEvent(importer.window,"CHAT_MSG_SYSTEM",line)
+end
+systemLine("NT1 ALT ISSUER IP: vanilla (effective stage 0).")
+systemLine("NT1 ALT SAFETY INSPECTION: Otherwarrior (level 60).")
+systemLine("Raid leader: unrelated system notice")
+assert(importer.safetyReportText.text=="" and
+    importer.safetyReportSession.started==false,
+    "Before correct bot start, no unrelated/other-bot lines can enter report")
+systemLine("NT1 ALT SAFETY INSPECTION: Testwarrior (level 60). NO talent code needed.")
+systemLine("Welcome to the server!")
+systemLine("NT1 ALT STATE equipment: 18 of 19 slots occupied.")
+systemLine("NT1 valid for unrelated player")
+assert(importer.safetyReportText.text:find("Testwarrior (level 60)",1,true) and
+    importer.safetyReportText.text:find("equipment: 18",1,true) and
+    not importer.safetyReportText.text:find("Welcome",1,true) and
+    not importer.safetyReportText.text:find("unrelated player",1,true),
+    "Only expected server Safety Inspection lines belong in report")
+systemLine("READ ONLY: safetypreview did not reset talents, switch specs.")
+assert(importer.safetyReportSession.finished and
+    importer.safetyReportStatus.text:find("End marker seen",1,true) and
+    importer.safetyReportText.text:find("READ ONLY: safetypreview",1,true),
+    "Only the server's known final marker completes a successful chat capture")
+local completedTranscript=importer.safetyReportText.text
+systemLine("NT1 ALT STATE equipment: should be ignored after final marker")
+assert(importer.safetyReportText.text==completedTranscript,
+    "Late system chat may never be appended after final marker")
+importer.reportSelectAll.scripts.OnClick(importer.reportSelectAll)
+assert(importer.safetyReportText.focused and
+    importer.safetyReportText.highlighted and
+    importer.safetyReportStatus.text:find("Ctrl+C",1,true),
+    "Copy control selects report for Ctrl+C; no fake clipboard API")
+importer.safetyReportText:SetText("fake replacement")
+importer.safetyReportText.scripts.OnTextChanged(importer.safetyReportText,true)
+assert(importer.safetyReportText.text==completedTranscript,
+    "Editing the captured report must restore the actual system transcript")
+importer.reportBack.scripts.OnClick(importer.reportBack)
+assert(importer.page==1 and importer.importPage.visible and
+    not importer.reportPage.visible and #commands==beforeInspection+1,
+    "Back from report cannot send any server command or erase loaded input")
 importer.input:SetText("NT1:vanilla:warrior:3g-1")
 importer.safetyButton.scripts.OnClick(importer.safetyButton)
 assert(#commands==beforeInspection+2 and
-    commands[#commands]==".naxxbot talents safetypreview Testwarrior",
-    "Safety Inspection must never append the current NT1 code")
+    commands[#commands]==".naxxbot talents safetypreview Testwarrior" and
+    importer.page==5 and importer.safetyReportText.text=="" and
+    not importer.safetyReportSession.started,
+    "New Safety Inspection starts a fresh report without NT1 code or old text")
+mockTime=121
+importer.window.scripts.OnUpdate(importer.window)
+assert(importer.safetyReportStatus.text:find("INCOMPLETE",1,true) and
+    importer.safetyReportSession.finished,
+    "No end marker within timeout must be visibly marked incomplete")
+systemLine("NT1 ALT SAFETY INSPECTION: Testwarrior (level 60).")
+assert(importer.safetyReportText.text=="",
+    "Late first server message must not turn a timed-out report into a pass")
+importer.reportBack.scripts.OnClick(importer.reportBack)
 currentTarget={name="Otherwarrior",guid="Player-02",class="WARRIOR"}
 importer.safetyButton.scripts.OnClick(importer.safetyButton)
 assert(#commands==beforeInspection+2 and
@@ -347,5 +413,22 @@ assert(not rejected and why:find("Unsupported bot name",1,true) and
     #commands==beforeInspection+2,
     "No punctuation/command injection in safety inspection bot names")
 currentTarget={name="Testwarrior",guid="Player-01",class="WARRIOR"}
+-- Denials and partial reports are not success; no code/Apply is ever sent.
+assert(importer:Open())
+mockTime=150
+importer.safetyButton.scripts.OnClick(importer.safetyButton)
+local deniedStart=#commands
+systemLine("NT1 ALT SAFETY DENIED: issuing character not allowlisted.")
+assert(importer.safetyReportSession.finished and
+    importer.safetyReportStatus.text:find("denial",1,true) and
+    #commands==deniedStart,
+    "Explicit system denial is captured and no extra command is sent")
+importer.reportBack.scripts.OnClick(importer.reportBack)
+importer.safetyButton.scripts.OnClick(importer.safetyButton)
+systemLine("NT1 ALT SAFETY INSPECTION: Testwarrior (level 60).")
+systemLine("NT1 ALT STATE equipment: "..string.rep("X",24000))
+assert(importer.safetyReportSession.finished and
+    importer.safetyReportStatus.text:find("INCOMPLETE",1,true),
+    "Oversized reports must fail closed rather than truncate silently")
 importer.window:Hide()
-print("NT1 Bot Talents: toolbar, preview, Safety Inspection, deliberate Apply and transport safety passed")
+print("NT1 Bot Talents: toolbar, preview, Page 5 chat capture, Safety Inspection and Apply transport guards passed")
