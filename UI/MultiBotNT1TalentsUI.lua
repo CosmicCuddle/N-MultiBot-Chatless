@@ -9,6 +9,8 @@ MultiBot.NT1Talents = Talents
 
 local MAX_COMMAND_LENGTH = 255 -- WoW 3.3.5a chat transport limit; fail closed.
 local MAX_CODE_LENGTH = 2048 -- Naxxramas Core parser limit.
+local MAX_SAFETY_REPORT_LENGTH = 24000 -- Bounded chat transcript; no new SavedVariables.
+local SAFETY_REPORT_TIMEOUT = 20 -- Incomplete if the server never sends its final line.
 local EXAMPLE = "NT1:vanilla:warrior:3g-1"
 local CLASSES = {
     warrior=true, paladin=true, hunter=true, rogue=true, priest=true,
@@ -126,6 +128,87 @@ function Talents:SendToTarget(action, text)
             ". Check server chat for success or rejection.")
 end
 
+-- Best-effort copy of existing server chat lines, NOT a signed response
+-- or Apply approval. Server prints a recognisable start and ending marker.
+function Talents:RefreshSafetyReport()
+    if self.safetyReportText then
+        self.safetyReportText:SetText(self.safetyReportTextValue or "")
+    end
+end
+
+function Talents:StartSafetyReport(botName)
+    self.safetyReportTextValue = ""
+    self.safetyReportSession = {
+        bot=botName, started=false, finished=false, length=0,
+        startedAt=type(GetTime)=="function" and GetTime() or nil,
+    }
+    self:RefreshSafetyReport()
+    if self.safetyReportStatus then
+        self.safetyReportStatus:SetText("Waiting for server inspection report...")
+    end
+    if self.showPage then self.showPage(5) end
+end
+
+-- CHAT_MSG_SYSTEM is the stock 3.3.5a system-message event, not an
+-- addon bridge. Skip ordinary chat and unrelated system messages. No server
+-- request ID exists: never claim that the resulting text is authenticated.
+function Talents:OnSafetySystemMessage(raw)
+    local session=self.safetyReportSession
+    if not session or session.finished or
+        not self.window or not self.window:IsShown() or
+        type(raw)~="string" then return end
+    local line=raw:gsub("|c%x%x%x%x%x%x%x%x",""):gsub("|r","")
+    if not session.started then
+        local name=line:match("^NT1 ALT SAFETY INSPECTION:%s*([^%s%(]+)%s*%(")
+        if name and string.lower(name)==string.lower(session.bot) then
+            session.started=true
+        elseif line:find("^NT1 ALT SAFETY DENIED:") or
+            line:find("^NT1 safety preview disabled") then
+            session.started=true
+            session.denied=true
+        else
+            return
+        end
+    elseif not line:find("^NT1 ALT ") and
+        not line:find("^READ ONLY: safetypreview") then
+        return
+    end
+    -- System lines might be interleaved/spoofed, and the server does not
+    -- give a report ID. Bound the text and mark any overflow incomplete.
+    if session.length + #line + 1 > MAX_SAFETY_REPORT_LENGTH then
+        session.finished=true
+        if self.safetyReportStatus then
+            self.safetyReportStatus:SetText("Report too long - INCOMPLETE.")
+        end
+        return
+    end
+    session.length=session.length+#line+1
+    self.safetyReportTextValue=(self.safetyReportTextValue or "") .. line .. "\n"
+    self:RefreshSafetyReport()
+    if session.denied or line:find("^READ ONLY: safetypreview") then
+        session.finished=true
+        if self.safetyReportStatus then
+            self.safetyReportStatus:SetText(session.denied and
+                "Server denial captured - select to copy." or
+                "End marker seen - chat copy, not verified.")
+        end
+    elseif self.safetyReportStatus then
+        self.safetyReportStatus:SetText("Receiving report - waiting for end...")
+    end
+end
+
+function Talents:CheckSafetyReportTimeout()
+    local session=self.safetyReportSession
+    if not session or session.finished or not session.startedAt or
+        type(GetTime)~="function" then return end
+    if GetTime()-session.startedAt >= SAFETY_REPORT_TIMEOUT then
+        session.finished=true
+        if self.safetyReportStatus then
+            self.safetyReportStatus:SetText("No end marker - INCOMPLETE report.")
+        end
+    end
+end
+
 -- Optional, deliberately clicked Alt Bot diagnosis. This never reads a
 -- pasted build, previews its legality or sends the destructive Apply command.
 -- The server alone checks mode, issuer ownership, Random/Alt identity and
@@ -154,6 +237,8 @@ function Talents:SendSafetyInspection()
     if #command > MAX_COMMAND_LENGTH then
         return false, "Safety command exceeds the 3.3.5a chat limit."
     end
+    -- Arm local capture before dispatch to avoid missing the first response.
+    self:StartSafetyReport(target.name)
     SendChatMessage(command, "SAY")
     -- The Page 1 status is one line high at enlarged 3.3.5a font scale.
     -- Avoid wrapping into the local build-summary label underneath.
@@ -719,6 +804,10 @@ function Talents:EnsureWindow()
     backupPage:SetSize(660,365)
     backupPage:SetPoint("TOPLEFT", window, "TOPLEFT", 0, -85)
     self.backupPage = backupPage
+    local reportPage=CreateFrame("Frame",nil,window)
+    reportPage:SetSize(660,365)
+    reportPage:SetPoint("TOPLEFT",window,"TOPLEFT",0,-85)
+    self.reportPage=reportPage
 
     -- Page 1 visual polish: three orderly Wrath-native sections.
     -- Only frames, labels and positions change. The secure Apply button,
@@ -1000,6 +1089,7 @@ function Talents:EnsureWindow()
         savedPage:Hide()
         presetPage:Hide()
         backupPage:Hide()
+        reportPage:Hide()
         if page == 2 then
             savedPage:Show()
             Talents.title:SetText("SAVED TALENT BUILDS")
@@ -1020,6 +1110,11 @@ function Talents:EnsureWindow()
             pendingImport = nil
             Talents.backupStatus:SetText(
                 "Export all, or paste an NMB1 backup to import.")
+        elseif page == 5 then
+            reportPage:Show()
+            Talents.title:SetText("SAFETY INSPECTION REPORT")
+            input:ClearFocus()
+            nameBox:ClearFocus()
         else
             importPage:Show()
             Talents.title:SetText("NT1 TALENT IMPORT")
@@ -1125,6 +1220,66 @@ function Talents:EnsureWindow()
             window:Hide()
         end)
 
+    -- Page 5: selectable report text; clipboard copying still requires Ctrl+C.
+    -- Wrath's UIPanelScrollFrameTemplate MUST have a name.
+    self.safetyReportHeading=styledLabel(reportPage,
+        "READ-ONLY SERVER CHAT REPORT",22,-18,610,{1,0.84,0.42})
+    self.safetyReportStatus=styledLabel(reportPage,
+        "No inspection requested.",22,-48,610,{0.86,0.85,0.79})
+    self.safetyReportPanel=listPanel(reportPage,22,-85,616,210)
+    self.safetyReportHint=styledLabel(self.safetyReportPanel,
+        "SELECT TEXT, THEN CTRL+C  |  CHAT IS NOT AUTHENTICATED",
+        12,-12,585,{0.69,0.85,1})
+    local reportScroll=CreateFrame("ScrollFrame",
+        "MultiBotNT1SafetyReportScrollFrame",reportPage,
+        "UIPanelScrollFrameTemplate")
+    reportScroll:SetPoint("TOPLEFT",reportPage,"TOPLEFT",34,-126)
+    reportScroll:SetSize(580,154)
+    local reportText=CreateFrame("EditBox",nil,reportScroll)
+    reportText:SetPoint("TOPLEFT",reportScroll,"TOPLEFT",0,0)
+    reportText:SetSize(548,154)
+    reportText:SetMultiLine(true)
+    reportText:SetAutoFocus(false)
+    reportText:SetMaxLetters(MAX_SAFETY_REPORT_LENGTH)
+    if _G.ChatFontNormal then reportText:SetFontObject(_G.ChatFontNormal) end
+    reportText:SetText("")
+    reportScroll:SetScrollChild(reportText)
+    self.safetyReportScroll=reportScroll
+    self.safetyReportText=reportText
+    reportText:SetScript("OnTextChanged",function(box,userInput)
+        if userInput then
+            -- Restore displayed capture after edits/paste; Ctrl+A/C works.
+            box:SetText(Talents.safetyReportTextValue or "")
+        end
+        if box.GetStringHeight then
+            box:SetHeight(math.max(154,box:GetStringHeight()+30))
+        end
+    end)
+    reportText:SetScript("OnEnterPressed",function(box)
+        box:ClearFocus()
+    end)
+    reportText:SetScript("OnEscapePressed",function(box)
+        box:ClearFocus()
+        Talents.showPage(1)
+    end)
+    self.reportSelectAll=button(reportPage,"Select all / Ctrl+C",
+        22,17,230,function()
+            reportText:SetFocus()
+            reportText:HighlightText()
+            Talents.safetyReportStatus:SetText(
+                "Text selected - press Ctrl+C to copy.")
+        end)
+    self.reportBack=button(reportPage,"< Import",267,17,165,
+        function()
+            reportText:ClearFocus()
+            Talents.showPage(1)
+        end)
+    self.reportClose=button(reportPage,"Close",449,17,181,
+        function()
+            reportText:ClearFocus()
+            window:Hide()
+        end)
+
     self.savedButton = button(importPage, "Saved builds >", 390, 18, 240,
         function()
             Talents.savedPageIndex = 1
@@ -1177,8 +1332,20 @@ function Talents:EnsureWindow()
     -- Target selection events update guidance, never dispatch server chat.
     window:RegisterEvent("PLAYER_TARGET_CHANGED")
     window:RegisterEvent("PLAYER_REGEN_ENABLED")
-    window:SetScript("OnEvent", function(_,event)
-        if event=="PLAYER_TARGET_CHANGED" then
+    window:RegisterEvent("CHAT_MSG_SYSTEM")
+    window:SetScript("OnUpdate",function()
+        Talents:CheckSafetyReportTimeout()
+    end)
+    window:SetScript("OnHide",function()
+        if Talents.safetyReportSession and
+            not Talents.safetyReportSession.finished then
+            Talents.safetyReportSession.finished=true
+        end
+    end)
+    window:SetScript("OnEvent", function(_,event,...)
+        if event=="CHAT_MSG_SYSTEM" then
+            Talents:OnSafetySystemMessage(...)
+        elseif event=="PLAYER_TARGET_CHANGED" then
             Talents:OnTargetChanged()
         elseif event=="PLAYER_REGEN_ENABLED" and
             Talents.window and Talents.window:IsShown() then
