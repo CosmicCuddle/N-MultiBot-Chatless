@@ -1079,6 +1079,12 @@ function Talents:EnsureWindow()
     end)
 
     self.showPage = function(page)
+        if page ~= 5 and Talents.safetyReportSession and
+            not Talents.safetyReportSession.finished then
+            -- Leaving the report stops collection. Never append unseen
+            -- server lines to a closed/viewed report in the background.
+            Talents.safetyReportSession.finished=true
+        end
         pendingSave = nil
         Talents.pendingDelete = nil
         Talents.pendingApply = nil
