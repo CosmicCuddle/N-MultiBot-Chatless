@@ -14,9 +14,20 @@ function Frame:SetText(v) self.text=v end
 function Frame:GetText() return self.text end
 function Frame:SetJustifyH(v) self.justify=v end
 function Frame:SetTextColor(...) self.color={...} end
+function Frame:SetNormalFontObject(font) self.normalFont=font end
+function Frame:SetHighlightFontObject(font) self.highlightFont=font end
+function Frame:SetAllPoints(frame) self.allPoints=frame end
+function Frame:SetTexture(path) self.texture=path end
+function Frame:SetVertexColor(...) self.vertexColor={...} end
+function Frame:CreateTexture(_,layer)
+    return setmetatable({scripts={},parent=self,layer=layer},Frame)
+end
 function Frame:SetFontObject(v) self.font=v end
 function Frame:SetAutoFocus() end
 function Frame:SetMaxLetters(v) self.maxLetters=v end
+function Frame:SetMultiLine(v) self.multiline=v end
+function Frame:SetScrollChild(child) self.scrollChild=child end
+function Frame:HighlightText() self.highlighted=true end
 function Frame:SetFrameStrata() end
 function Frame:SetMovable() end
 function Frame:SetClampedToScreen() end
@@ -27,32 +38,75 @@ function Frame:SetBackdropColor() end
 function Frame:SetBackdropBorderColor() end
 function Frame:SetFocus() self.focused=true end
 function Frame:ClearFocus() self.focused=false end
+function Frame:RegisterEvent(event)
+    self.registeredEvents=self.registeredEvents or {}
+    self.registeredEvents[event]=true
+end
+function Frame:SetAttribute(name,value)
+    self.attributes=self.attributes or {}
+    self.attributes[name]=value
+end
+function Frame:HookScript(event,fn)
+    local prior=self.scripts[event]
+    self.scripts[event]=function(frame,...)
+        if prior then prior(frame,...) end
+        -- This is a mock of the native SecureActionButton OnClick:
+        -- if the test supplied a nearby named unit, target it before the
+        -- insecure hook. Never simulate /targetexact as ordinary addon Lua.
+        if frame.template and frame.template:find(
+            "SecureActionButtonTemplate",1,true) and
+            frame.attributes and frame.attributes.type1=="macro" then
+            local name=(frame.attributes.macrotext1 or ""):match(
+                "^/targetexact ([A-Za-z]+)$")
+            if name then
+                frame.lastSecureTarget=name
+                if frame.simulateSecureClick then
+                    frame:simulateSecureClick(name)
+                end
+            end
+        end
+        fn(frame,...)
+    end
+end
 function Frame:SetScript(k,fn) self.scripts[k]=fn end
 function Frame:Show() self.visible=true end
 function Frame:Hide() self.visible=false end
-function Frame:CreateFontString() return setmetatable({scripts={}},Frame) end
+function Frame:CreateFontString() return setmetatable({scripts={},parent=self},Frame) end
 function CreateFrame(kind,name,parent,template)
+    assert(template~="UIPanelScrollFrameTemplate" or
+        (type(name)=="string" and name~=""),
+        "WoW 3.3.5a scroll-frame OnLoad requires a named template")
     local f=setmetatable({kind=kind,name=name,parent=parent,template=template,scripts={}},Frame)
     if name then _G[name]=f end
     return f
 end
 local function click(b) assert(b and b.scripts.OnClick); b.scripts.OnClick(b) end
 UIParent=CreateFrame("Frame","UIParent")
+StaticPopupDialogs = {}
+local confirmations = {}
+function StaticPopup_Show(key,display)
+    confirmations[#confirmations+1]={key=key,text=display}
+    return confirmations[#confirmations]
+end
+function Frame:IsShown() return self.visible end
 UIErrorsFrame={AddMessage=function() end}
 function UnitExists(w) return w=="target" and target ~= nil end
 function UnitIsPlayer(w) return w=="target" and target ~= nil end
 function UnitIsUnit(w,o) return w=="target" and o=="player" and target and target.name=="Currentplayer" end
 function UnitName(w) return w=="target" and target and target.name end
 function UnitGUID(w) return w=="target" and target and target.guid end
-function UnitClass(w) return w=="target" and "Mage","MAGE" end
+function UnitClass(w)
+    local token = target and target.class or "MAGE"
+    return token, token
+end
 function SendChatMessage(s,channel)
     assert(channel=="SAY")
     commands[#commands+1]=s
 end
 dofile("Data/NT1WebsitePresets.lua")
 assert(type(MultiBot.NT1WebsitePresets)=="table" and
-    #MultiBot.NT1WebsitePresets==40,
-    "Use precisely the 40 verified converted website presets")
+    #MultiBot.NT1WebsitePresets==54,
+    "Keep 40 pinned + 7 Warrior + 7 new Warlock/Mage presets")
 dofile("UI/MultiBotNT1TalentsUI.lua")
 local api=assert(MultiBot.NT1Talents)
 local mage="NT1:vanilla:mage:3g-1"
@@ -85,6 +139,31 @@ assert(api:Open())
 assert(api.page==1 and api.importPage.visible and not api.savedPage.visible)
 assert(api.window.height==465 and api.window.width==660)
 assert(api.nameBox.maxLetters==40 and api.input.maxLetters==2048)
+assert(api.importCodePanel and api.importCodePanel.width==616 and
+    api.importCodePanel.position[5]==-87 and
+    api.importNamePanel.height==79 and
+    api.importNamePanel.position[5]==-145 and
+    api.importInfoPanel.height==83 and
+    api.importInfoPanel.position[5]==-227,
+    "Import needs distinct native code, save and status sections")
+assert(api.importIntro.text=="PASTE OR LOAD AN NT1 TALENT CODE" and
+    api.importExample.text:find("NT1:",1,true) and
+    api.importSafety.text=="Apply requires confirmation and a bot backup.",
+    "Import instructions must remain concise with safety warning")
+assert(api.status.position[5]==-11 and
+    api.buildSummary.position[5]==-37 and
+    api.importSafety.position[5]==-64 and
+    api.importSaveLabel.position[5]==-13 and
+    api.status.parent==api.importInfoPanel and
+    api.buildSummary.parent==api.importInfoPanel and
+    api.importSafety.parent==api.importInfoPanel and
+    api.importSaveLabel.parent==api.importNamePanel and
+    api.importInfoPanel.position[5]-api.importInfoPanel.height==-310,
+    "Import messages must fit above footer without overlapping")
+assert(api.input.position[5]==-106 and
+    api.nameBox.position[5]==-149 and
+    api.applyButton.template:find("SecureActionButtonTemplate",1,true),
+    "Importer inputs and secure Apply control must remain intact")
 assert(#commands==0)
 api.input:SetText(mage)
 api.nameBox:SetText("PvE Mage")
@@ -102,8 +181,24 @@ assert(api:GetSavedCode("PvE Mage")==mage2 and #commands==0)
 click(api.savedButton)
 assert(api.page==2 and api.savedPage.visible and not api.importPage.visible)
 assert(#api:ListSavedBuilds()==3 and #commands==0)
+assert(api.savedListPanel and api.savedListPanel.width==616 and
+    api.savedListPanel.height==207,
+    "Saved list must use the same native list style as Website Presets")
+assert(api.savedStatus.position[5]==-18 and
+    api.savedRows[1].position[5]==-60 and
+    api.savedListPanel.position[5]==-52 and
+    api.savedRows[1].template==nil,
+    "Saved help, panel and first row must stay above footer at large font")
+assert(api.savedRows[1].categoryLabel.text=="MAGE" and
+    api.savedRows[1].eraLabel.text=="VANILLA" and
+    api.selectedName=="PvE Mage" and
+    api.savedRows[1].nameLabel.text=="> PvE Mage",
+    "Saved rows show class, era, name and already-saved selection")
 click(api.savedRows[1])
 assert(api.selectedName=="PvE Mage" and #commands==0)
+assert(api.savedRows[1].nameLabel.text=="> PvE Mage" and
+    api.savedRows[1].categoryStripe.vertexColor[2]==0.75,
+    "Selected saved build is marked visibly without changing data")
 -- A different class can still be loaded for editing, but the apply path
 -- retains the target-class preflight and may never bypass server validation.
 click(api.loadButton)
@@ -120,6 +215,8 @@ click(api.savedButton)
 click(api.savedRows[1]) -- PvE Mage
 click(api.deleteButton)
 assert(api:GetSavedCode("PvE Mage") and #commands==0)
+assert(api.savedStatus.text==
+    "Delete selected build? Click Delete again.")
 click(api.deleteButton)
 assert(api:GetSavedCode("PvE Mage")==nil and #commands==0)
 -- Multiple pages (5 entries per page) and safe page navigation.
@@ -130,6 +227,9 @@ api.savedPageIndex=1
 api:UpdateSavedPage()
 assert(api.savedPageCounter.text:find("/ 3",1,true),
     "11 saved builds need 3 pages, 5 per page")
+assert(api.savedRows[5].position[5]==-220 and
+    api.savedListPanel.position[5]-api.savedListPanel.height==-259,
+    "Five saved rows fit inside the fixed panel above footer controls")
 click(api.nextSavedPage)
 assert(api.savedPageIndex==2)
 click(api.nextSavedPage)
@@ -152,32 +252,186 @@ assert(not again:DeleteBuild("missing"))
 assert(again:DeleteBuild("RESTORATION TEST"))
 assert(again:GetSavedCode("Restoration Test")==nil)
 assert(#commands==0)
--- Website presets are an immutable class-specific snapshot. Warrior and
--- Warlock are excluded, with the original bot spec menu retained.
-local counts={druid=9,hunter=8,mage=3,priest=7,rogue=6,shaman=7}
+-- Website presets: 40 originally pinned, 7 Warrior, 7 Warlock/Mage.
+-- Only Death Knight is explicitly excluded. Paladin has no approved codes.
+local counts={druid=9,hunter=8,mage=5,priest=7,rogue=6,shaman=7,warrior=7,warlock=5}
 for class,count in pairs(counts) do
     assert(#again:ListWebsitePresets(class)==count,
         "Unexpected pinned website preset count for "..class)
 end
-assert(#again:ListWebsitePresets("warlock")==0)
-assert(#again:ListWebsitePresets("warrior")==0)
+assert(#again:ListWebsitePresets("warlock")==5)
+assert(#again:ListWebsitePresets("WARLOCK")==5)
+assert(#again:ListWebsitePresets("WARRIOR")==7)
 assert(#again:ListWebsitePresets("deathknight")==0)
 assert(#again:ListWebsitePresets("paladin")==0)
+-- Death Knight is explicitly excluded, not merely absent from this snapshot.
+-- Future accidental DK entries must never appear in the website preset UI.
+local originalPresetCount=#MultiBot.NT1WebsitePresets
+table.insert(MultiBot.NT1WebsitePresets,{
+    class="deathknight",category="Raid",name="Excluded DK Test",
+    role="Tank",variant=1,code="NT1:wotlk:deathknight:3g-1"
+})
+assert(#again:ListWebsitePresets("Death Knight")==0)
+assert(#again:ListWebsitePresets("DEATHKNIGHT")==0)
+assert(not again:OpenWebsitePresetsForBot(
+    "ExampleDK","Death Knight",function() end))
+assert(#commands==0)
+table.remove(MultiBot.NT1WebsitePresets)
+assert(#MultiBot.NT1WebsitePresets==originalPresetCount)
+-- Compare the exact seven approved calculator links; do not drift their codes.
+local expectedWarrior = {
+    {category="Solo",name="Protection Warrior",role="Tank",variant=1,code="NT1:vanilla:warrior:3d-3.3g-1.3j-3.3k-2.3m-5.3u-5.3x-3.40-3.42-1.43-2.44-1.45-2.48-1.49-1.ie-2.ji-5.18h-5.19y-2.1qi-3.2bc-1"},
+    {category="Solo",name="Fury Warrior",role="DPS",variant=1,code="NT1:vanilla:warrior:3d-3.3i-2.3j-3.3m-5.4a-2.4b-5.4c-5.4d-5.4f-4.4g-1.4l-1.4n-1.ie-2.17x-5.1a1-3.1qi-3.2bc-1"},
+    {category="Solo",name="Arms Warrior",role="DPS",variant=1,code="NT1:vanilla:warrior:3d-3.3i-2.3j-3.3k-3.3m-3.3n-2.3o-5.3p-1.3r-1.3s-3.3t-1.4a-1.4b-2.4d-5.4h-3.4m-3.ie-2.1fn-1.1q0-3.1qi-3.2bc-1"},
+    {category="Raid",name="Protection Warrior",role="Tank",variant=1,code="NT1:vanilla:warrior:3g-1.3m-5.3u-5.3w-5.3x-3.40-3.42-1.43-2.44-1.45-2.48-1.49-1.4d-5.4f-1.ji-5.18h-5.19y-2.1qi-3"},
+    {category="Raid",name="Fury - Rend Flurry",role="DPS",variant=1,code="NT1:vanilla:warrior:3d-3.3g-1.3j-3.3k-3.3m-2.4a-5.4c-5.4d-5.4f-3.4l-1.4n-1.ht-1.ie-2.16t-2.16u-2.17x-5.1a1-3.1qi-3.2bc-1"},
+    {category="Raid",name="Fury - Anger Management",role="DPS",variant=2,code="NT1:vanilla:warrior:3d-3.3g-1.3j-3.3k-3.3m-2.3t-1.4a-5.4c-5.4d-5.4f-3.4l-1.4n-1.ht-1.ie-2.16t-2.16u-2.17x-5.1a1-3.1qi-3"},
+    {category="Raid",name="Arms Warrior",role="DPS",variant=1,code="NT1:vanilla:warrior:3d-3.3g-1.3j-3.3k-3.3m-1.3n-2.3o-5.3p-1.3q-1.3r-1.3s-3.3t-1.4d-5.4h-5.4m-2.ht-2.ie-2.16u-1.1fn-2.1q0-3.1qi-3.2bc-1"},
+}
+local warrior=again:ListWebsitePresets("warrior")
+assert(#warrior==#expectedWarrior)
+local warriorSeen={}
+for _,expected in ipairs(expectedWarrior) do
+    local matched=false
+    for _,actual in ipairs(warrior) do
+        if actual.category==expected.category and
+            actual.name==expected.name and actual.role==expected.role and
+            actual.variant==expected.variant and actual.code==expected.code then
+            matched=true
+        end
+    end
+    assert(matched,"Missing or changed approved Warrior code: "..expected.name)
+    local points, ids, entries=0,{},0
+    for pair in (expected.code:match("^NT1:vanilla:warrior:(.+)$").."."):gmatch("(.-)%.") do
+        local id,rank=pair:match("^([0-9a-z]+)%-([1-5])$")
+        assert(id and rank and not ids[id])
+        ids[id]=true
+        points=points+tonumber(rank)
+        entries=entries+1
+    end
+    assert(points==51 and entries>=1,"Warrior level-60 build must spend 51 points")
+    warriorSeen[expected.category]=(warriorSeen[expected.category] or 0)+1
+end
+assert(warriorSeen.Raid==4 and warriorSeen.Solo==3)
+-- The seven approved completion links must retain their precise NT1 codes,
+-- class, Raid/Solo placement, role, and names (not just total row count).
+local newApproved = {
+    {class="warlock", category="Raid", name="Affliction Warlock", role="DPS", variant=1, code="NT1:vanilla:warlock:ru-2.rv-5.rw-2.rx-3.rz-2.sd-2.sx-1.sy-5.th-1.ul-2.xy-3.xz-3.y2-1.yi-3.zm-1.zo-2.1ad-5.1af-3.1d0-3.1gb-2"},
+    {class="warlock", category="Raid", name="Demonology Warlock", role="DPS", variant=1, code="NT1:vanilla:warlock:q7-5.q8-5.qs-1.qv-5.rb-2.xx-2.xz-3.y0-2.y2-1.y3-2.yi-3.yk-5.z1-2.z2-5.zl-1.zm-1.1af-3.1g8-1.1gb-2"},
+    {class="warlock", category="Solo", name="Affliction Warlock", role="DPS", variant=1, code="NT1:vanilla:warlock:rt-3.ru-2.rv-5.rw-2.rx-3.rz-2.sx-1.sy-5.ul-2.xz-3.y0-2.y1-3.y2-1.y3-2.yi-3.zm-1.zo-2.1ad-1.1af-3.1d0-3.1gb-2"},
+    {class="warlock", category="Solo", name="Demonology Warlock", role="DPS", variant=1, code="NT1:vanilla:warlock:rt-1.rv-5.rw-2.rx-3.rz-2.ul-2.xz-3.y0-1.y1-3.y2-1.y3-2.yi-3.yk-5.z1-2.z2-5.zl-1.zm-1.1af-3.1d0-3.1g8-1.1gb-2"},
+    {class="warlock", category="Solo", name="Destruction Warlock", role="DPS", variant=1, code="NT1:vanilla:warlock:q5-2.q7-5.qp-3.qr-1.qs-2.qu-5.qv-5.qw-1.r9-1.rd-2.xz-3.y1-3.y2-1.yi-2.z2-5.zm-1.1af-3.1eh-1.1gb-2.1gf-3"},
+    {class="mage", category="Solo", name="Arcane Mage", role="DPS", variant=1, code="NT1:vanilla:mage:11-2.1p-1.1q-3.1r-3.1t-2.1u-3.1x-1.23-5.25-5.28-5.29-3.2a-2.2e-1.2f-1.bp-3.kl-2.vq-3.19t-3.1pq-3"},
+    {class="mage", category="Solo", name="Fire Mage", role="DPS", variant=1, code="NT1:vanilla:mage:n-2.p-3.q-5.s-2.t-1.w-1.x-3.y-5.z-5.10-1.11-2.1p-1.1q-3.1r-3.1t-2.1u-3.1v-2.1x-1.19j-3.19t-3"},
+}
+for _,expected in ipairs(newApproved) do
+    local matched=false
+    for _,actual in ipairs(again:ListWebsitePresets(expected.class)) do
+        if actual.category==expected.category and
+            actual.name==expected.name and actual.role==expected.role and
+            actual.variant==expected.variant and actual.code==expected.code then
+            matched=true
+        end
+    end
+    assert(matched,"Missing or altered completion code: "..expected.name)
+end
+assert(MultiBot.NT1CompletionPresetSource==
+    "Replace Website Talents.txt, owner-supplied 2026-10-11")
+-- Every bundled preset must remain valid and fit the existing transport.
+for _,entry in ipairs(MultiBot.NT1WebsitePresets) do
+    assert(again:ValidateCode(entry.code,entry.class))
+    -- TwelveCharsX is 12 ASCII characters: the maximum length accepted
+    -- by secure /targetexact, and must fit the same single SAY payload.
+    assert(#(".naxxbot talents preview TwelveCharsX "..entry.code)<=255 and
+        #(".naxxbot talents apply TwelveCharsX "..entry.code)<=255,
+        "Bundled preset exceeds the SAY envelope for a 12-character bot")
+    local points,seen=0,{}
+    for token in (entry.code:match("^NT1:vanilla:[a-z]+:(.+)$").."."):gmatch("(.-)%.") do
+        local id,rank=token:match("^([0-9a-z]+)%-([1-5])$")
+        assert(id and rank and not seen[id],"Duplicated or invalid talent ID")
+        seen[id]=true
+        points=points+tonumber(rank)
+    end
+    assert(points==51,"All uploaded Vanilla level-60 builds must spend 51 points")
+end
+-- One identical Druid Feral Tank code is intentionally offered in
+-- both Raid and Solo; category duplicate is not a missing build.
+assert(#again:ListFilteredWebsitePresets("mage")==5)
+again.presetFilter="Raid"
+assert(#again:ListFilteredWebsitePresets("mage")==1)
+again.presetFilter="Solo"
+assert(#again:ListFilteredWebsitePresets("mage")==4)
+again.presetFilter="All"
 local preset=again:ListWebsitePresets("mage")
-assert(#preset==3 and preset[1].code:match("^NT1:vanilla:mage:"))
+assert(#preset==5 and preset[1].code:match("^NT1:vanilla:mage:"))
+assert(#again:ListFilteredWebsitePresets("warlock")==5)
+again.presetFilter="Raid"
+assert(#again:ListFilteredWebsitePresets("warlock")==2)
+again.presetFilter="Solo"
+assert(#again:ListFilteredWebsitePresets("warlock")==3)
+again.presetFilter="All"
+again.presetFilter="Raid"
+assert(#again:ListFilteredWebsitePresets("warrior")==4)
+again.presetFilter="Solo"
+assert(#again:ListFilteredWebsitePresets("warrior")==3)
+again.presetFilter="All"
 local originalSpecsOpened=false
 assert(again:OpenWebsitePresetsForBot("Zevon","Mage",function()
     originalSpecsOpened=true
 end))
 assert(again.page==3 and again.presetPage.visible and
     not again.importPage.visible and #commands==0)
+assert(again.presetStatus.text=="Select a build. No talents are applied.",
+    "Preset help must be concise and include the no-Apply reassurance")
+assert(again.presetStatus.position and
+    again.presetStatus.position[1]=="TOPLEFT" and
+    again.presetStatus.position[5]==-18 and
+    again.presetFilterButtons.All.position[5]==-43 and
+    again.presetListPanel.position[5]==-75,
+    "Safety hint must be above the filters and list, not in the footer")
+assert(again.presetStatus.position[5]>
+    again.presetFilterButtons.All.position[5],
+    "Safety hint must not overlap Previous/Next at large font scale")
+assert(not again.loadPresetButton,
+    "Website preset rows should load directly without a redundant button")
+assert(again.presetListPanel and again.presetListPanel.width==616 and
+    again.presetRows[1].template==nil and
+    again.presetRows[1].normalFont and
+    again.presetRows[1].background.texture==
+        "Interface\\Buttons\\WHITE8X8" and
+    again.presetRows[1].categoryStripe,
+    "Native dark website preset rows must replace red utility buttons")
+click(again.presetFilterButtons.Raid)
+assert(again.presetFilter=="Raid" and
+    again.presetCounter.text:find("(1 builds)",1,true) and
+    again.presetRows[1].categoryLabel.text=="RAID")
+assert(again.presetRows[1].categoryStripe.vertexColor[1]==0.73,
+    "Raid stripe uses a restrained warm accent")
+click(again.presetFilterButtons.Solo)
+assert(again.presetFilter=="Solo" and
+    again.presetCounter.text:find("(4 builds)",1,true) and
+    again.presetRows[1].categoryLabel.text=="SOLO")
+assert(again.presetRows[1].categoryStripe.vertexColor[1]==0.31,
+    "Solo stripe uses a distinct cool accent")
+click(again.presetFilterButtons.All)
+assert(again.presetFilter=="All" and #commands==0)
 assert(again.presetClass=="mage" and again.requestedBot=="Zevon")
+assert(again.applyButton.attributes.type1=="macro" and
+    again.applyButton.attributes.macrotext1=="/targetexact Zevon",
+    "Auto-target macro must be configured for the roster bot")
+assert(not again:LoadWebsitePreset(nil) and again.page==3,
+    "Missing preset must not leave the browser")
+assert(not again:LoadWebsitePreset({
+    class="warrior",code="NT1:vanilla:warrior:3g-1",name="Wrong Class",
+    category="Raid"
+}) and again.page==3,"Wrong-class preset must not load")
 click(again.presetRows[1])
 assert(again.selectedPreset and again.selectedPreset.class=="mage")
-assert(#commands==0,"Selecting preset must never send chat commands")
-click(again.loadPresetButton)
-assert(again.page==1 and again.input.text==preset[1].code)
-assert(#commands==0,"Loading a website preset must never apply it")
+assert(again.page==1 and again.importPage.visible and
+    not again.presetPage.visible and again.input.text==preset[1].code,
+    "One click must load the Mage preset directly into Import")
+assert(again.nameBox.text:find(preset[1].name,1,true))
+assert(#commands==0,"Clicking a preset never sends Preview or Apply")
 assert(again.boundTarget and again.boundTarget.name=="Zevon",
     "Matching selected target may be safely bound for later review")
 -- Bot menu may be used without that bot targeted. In that case, loading is
@@ -188,17 +442,84 @@ assert(again:OpenWebsitePresetsForBot("Zevon","mage",function()
 end))
 assert(again.boundTarget==nil and again.page==3)
 click(again.presetRows[1])
-click(again.loadPresetButton)
-assert(again.page==1 and again.input.text==preset[1].code)
+assert(again.page==1 and again.input.text==preset[1].code and #commands==0,
+    "Untargeted bot's website preset must load locally in one click")
 assert(not again:SendToTarget("apply",again.input.text))
 assert(#commands==0,"A menu-selected but untargeted bot must never receive apply")
 click(again.targetConfirm)
 assert(again.status.text:find("Target Zevon",1,true) and
     again.boundTarget==nil)
+-- Apply should guide toward the roster bot without dispatching commands
+-- or showing a red UI error. The target event may bind but never Apply.
+click(again.applyButton)
+assert(again.applyButton.lastSecureTarget=="Zevon" and
+    again.awaitingTarget and #commands==0 and
+    again.status.text:find("Target Zevon",1,true),
+    "Failed /targetexact must fall back to guidance, never Apply")
+-- When the bot is actually nearby, the *secure* hardware click switches
+-- the target before the callback checks identity or opens a confirmation.
+again.applyButton.simulateSecureClick=function(_,name)
+    if name=="Zevon" then
+        target={name="Zevon",guid="Player-Z",class="MAGE"}
+    end
+end
+click(again.applyButton)
+assert(not again.awaitingTarget and again.boundTarget and
+    again.boundTarget.name=="Zevon" and not again.pendingApply and
+    #commands==0, "First secure target click must never open Apply")
+assert(again.status.text:find("Click Apply talents again",1,true))
+click(again.applyButton)
+assert(again.pendingApply and #commands==0,
+    "Second click after target selection opens confirmation only")
+again.window.scripts.OnEvent(again.window,"PLAYER_TARGET_CHANGED")
+assert(again.pendingApply and #commands==0,
+    "Same GUID event must not dismiss a valid popup")
+StaticPopupDialogs.MULTIBOT_NT1_APPLY_CONFIRM.OnCancel()
+assert(not again.pendingApply)
+again.applyButton.simulateSecureClick=nil
+target={name="Differentmage",guid="Player-O",class="MAGE"}
+click(again.applyButton)
+assert(again.awaitingTarget and not again.pendingApply and #commands==0)
+assert(again.window.registeredEvents.PLAYER_TARGET_CHANGED and
+    again.window.registeredEvents.PLAYER_REGEN_ENABLED)
+assert(not again.pendingApply)
+target={name="Zevon",guid="Player-S",class="SHAMAN"}
+again.window.scripts.OnEvent(again.window,"PLAYER_TARGET_CHANGED")
+assert(again.boundTarget and again.boundTarget.guid=="Player-Z" and
+    #commands==0 and not again.pendingApply and
+    again.status.text:find("MAGE",1,true),
+    "Wrong-class target must not replace a previously verified bot GUID")
+-- A protected macro cannot justify accepting a wrong class/GUID.
+again.applyButton.simulateSecureClick=function()
+    target={name="Zevon",guid="Player-S",class="SHAMAN"}
+end
+click(again.applyButton)
+assert(not again.pendingApply and #commands==0,
+    "Secure name target with wrong class must never prompt Apply")
+again.applyButton.simulateSecureClick=nil
+assert(#commands==0)
 target={name="Zevon",guid="Player-Z",class="MAGE"}
-click(again.targetConfirm)
+again.window.scripts.OnEvent(again.window,"PLAYER_TARGET_CHANGED")
 assert(again.boundTarget and again.boundTarget.name=="Zevon")
-assert(#commands==0,"Target confirmation is not an apply action")
+assert(again.status.text:find("Target verified",1,true))
+assert(#commands==0,"Target event verifies but never applies")
+assert(not again.awaitingTarget and not again.pendingApply)
+click(again.applyButton)
+assert(again.pendingApply and #commands==0)
+StaticPopupDialogs.MULTIBOT_NT1_APPLY_CONFIRM.OnCancel()
+assert(not again.pendingApply and #commands==0,
+    "Cancelling Apply confirmation must not dispatch")
+-- Changing target while the second confirmation is open aborts it.
+click(again.applyButton)
+assert(again.pendingApply and #commands==0)
+local staleAccept=StaticPopupDialogs.MULTIBOT_NT1_APPLY_CONFIRM.OnAccept
+target={name="Differentmage",guid="Player-Other",class="MAGE"}
+again.window.scripts.OnEvent(again.window,"PLAYER_TARGET_CHANGED")
+assert(not again.pendingApply and #commands==0,
+    "Target changes must invalidate an outstanding confirmation")
+staleAccept()
+assert(#commands==0,"Stale Apply dialog may never dispatch")
+target={name="Zevon",guid="Player-Z",class="MAGE"}
 assert(again:OpenWebsitePresetsForBot("Zevon","mage",function()
     originalSpecsOpened=true
 end))
@@ -206,5 +527,152 @@ click(again.originalSpecButton)
 assert(originalSpecsOpened and not again.window.visible,
     "Original bot specialization option must remain accessible")
 assert(#commands==0)
-print("NT1 account-wide saved builds and 40 class-filtered website presets: all checks passed")
+-- Warrior now has seven website choices, five per page, without any auto-apply.
+-- Warlock now opens the website browser; its two Raid and three Solo
+-- entries stay local until explicitly requesting Preview or Apply.
+local warlockSpecsOpened=false
+target={name="Morthos",guid="Player-L",class="WARLOCK"}
+assert(again:OpenWebsitePresetsForBot("Morthos","Warlock",function()
+    warlockSpecsOpened=true
+end))
+assert(again.page==3 and again.presetClass=="warlock" and
+    again.presetCounter.text:find("(5 builds)",1,true) and #commands==0)
+click(again.presetFilterButtons.Solo)
+assert(again.presetCounter.text:find("(3 builds)",1,true))
+local expectedWarlockCode=again:ListFilteredWebsitePresets("warlock")[1].code
+click(again.presetRows[1])
+assert(again.page==1 and again.input.text==expectedWarlockCode and
+    again.selectedPreset.class=="warlock" and #commands==0,
+    "Warlock one-click import must not send a server command")
+assert(again:OpenWebsitePresetsForBot("Morthos","Warlock",function()
+    warlockSpecsOpened=true
+end))
+click(again.originalSpecButton)
+assert(warlockSpecsOpened and not again.window.visible and #commands==0,
+    "Warlock must retain original Playerbots Bot specs access")
+local warriorSpecsOpened=false
+target={name="Valiant",guid="Player-W",class="WARRIOR"}
+assert(again:OpenWebsitePresetsForBot("Valiant","Warrior",function()
+    warriorSpecsOpened=true
+end))
+assert(again.applyButton.attributes.macrotext1=="/targetexact Valiant",
+    "Opening another roster bot must refresh the secure target name")
+assert(again.page==3 and again.presetClass=="warrior" and
+    again.presetCounter.text:find("Page 1 / 2",1,true) and
+    again.presetCounter.text:find("(7 builds)",1,true) and #commands==0)
+click(again.nextPresetPage)
+assert(again.presetPageIndex==2 and again.presetCounter.text:find("Page 2 / 2",1,true))
+click(again.presetFilterButtons.Raid)
+assert(again.presetPageIndex==1 and
+    again.presetCounter.text:find("(4 builds)",1,true))
+click(again.presetFilterButtons.Solo)
+assert(again.presetCounter.text:find("(3 builds)",1,true))
+local selectedWarrior=again:ListFilteredWebsitePresets("warrior")[1].code
+click(again.presetRows[1])
+assert(again.selectedPreset and again.selectedPreset.class=="warrior")
+assert(again.page==1 and again.input.text==selectedWarrior and
+    not again.presetPage.visible and #commands==0,
+    "Clicking a Solo Warrior preset must load immediately without Apply")
+assert(again:DescribeCode(again.input.text).role=="DPS" or
+    again:DescribeCode(again.input.text).role=="Tank",
+    "Chosen website role must be retained for local build summary")
+assert(again:OpenWebsitePresetsForBot("Valiant","Warrior",function()
+    warriorSpecsOpened=true
+end))
+click(again.originalSpecButton)
+assert(warriorSpecsOpened and not again.window.visible and #commands==0,
+    "Warrior must keep the original Playerbots Bot specs action")
+target={name="Zevon",guid="Player-Z",class="MAGE"}
+-- Portable plain-text backup: bulk export, round-trip, collision confirmation,
+-- format rejection and UI controls must remain entirely client-side.
+local backup, backupErr=again:ExportSavedBuilds()
+assert(backup and not backupErr and backup:find("^NMB1\n") and
+    backup:find("Vanilla Fire",1,true) and
+    backup:find("END|10",1,true))
+local originalStore=_G.MultiBotNT1SavedBuilds
+_G.MultiBotNT1SavedBuilds={}
+assert(not again:ImportSavedBuilds("NMB1\nFake|not-a-build\nEND|1\n"))
+assert(not again:ImportSavedBuilds(
+    "NMB1\nValid|NT1:vanilla:mage:3g-1\n"))
+assert(not again:ImportSavedBuilds(
+    "NMB1\nValid|NT1:vanilla:mage:3g-1\nEND|2\n"))
+assert(not again:ImportSavedBuilds("NMB1\nGood|NT1:vanilla:mage:3g-1\n" ..
+    "Good|NT1:vanilla:mage:3g-2\nEND|2\n"))
+assert(#again:ListSavedBuilds()==0,
+    "Malformed import must never partially change saved data")
+assert(again:ImportSavedBuilds(backup))
+assert(#again:ListSavedBuilds()==10,"Restored expected 10 named builds")
+assert(again:GetSavedCode("Vanilla Fire")==mage2)
+assert(not again:ImportSavedBuilds("NMB1\nVanilla Fire|NT1:vanilla:mage:3g-1\nEND|1\n"))
+assert(again:GetSavedCode("Vanilla Fire")==mage2,
+    "Existing conflicting name must stay unchanged before confirmation")
+assert(again:ImportSavedBuilds("NMB1\nVanilla Fire|NT1:vanilla:mage:3g-1\nEND|1\n",true))
+assert(again:GetSavedCode("Vanilla Fire")==mage)
+_G.MultiBotNT1SavedBuilds=originalStore
+assert(again:Open())
+click(again.savedButton)
+click(again.backupButton)
+assert(again.page==4 and again.backupPage.visible and again.backupText.multiline)
+-- Page 4 styling is strictly visual: status is at the TOP, the editor
+-- has its own Wrath-native panel, and no text can sit in footer controls.
+assert(again.backupHeading and
+    again.backupHeading.text=="COPY OR PASTE AN NMB1 BACKUP" and
+    again.backupHeading.position[5]==-18 and
+    again.backupStatus.position[5]==-48 and
+    again.backupStatus.parent==again.backupPage,
+    "NMB1 heading/status must appear above the editor")
+assert(again.backupTextPanel and again.backupTextPanel.width==616 and
+    again.backupTextPanel.height==186 and
+    again.backupTextPanel.position[5]==-112 and
+    again.backupTextHeading.parent==again.backupTextPanel and
+    again.backupTextHeading.position[5]==-12 and
+    again.backupTextPanel.position[5]-again.backupTextPanel.height==-298,
+    "Native backup editor panel must not collide with footer controls")
+assert(again.backupScroll and again.backupScroll.position[4]==34 and
+    again.backupScroll.position[5]==-151 and
+    again.backupScroll.width==580 and
+    again.backupScroll.height==137 and
+    again.backupText.maxLetters==30000 and
+    again.backupText.height==137,
+    "Keep the named scrolling text editor, its size and 30 KB limit")
+assert(again.exportButton.position[4]==22 and
+    again.importButton.position[4]==152 and
+    again.backFromBackup.position[4]==315 and
+    again.closeBackup.position[4]==475 and
+    #commands==0,
+    "Backup footer callbacks and no-server-command boundary unchanged")
+assert(_G.MultiBotNT1BackupScrollFrame and
+    _G.MultiBotNT1BackupScrollFrame.scrollChild==again.backupText and
+    again.backupScroll==_G.MultiBotNT1BackupScrollFrame,
+    "Backup page requires named 3.3.5a-compatible scroll frame")
+click(again.exportButton)
+assert(again.backupText.text:find("^NMB1\n") and
+    again.backupText.highlighted and #commands==0)
+again.backupText:SetText("NMB1\nVanilla Fire|NT1:vanilla:mage:3g-1\nEND|1\n")
+click(again.importButton)
+assert(again.backupStatus.text:find("Confirm overwrite:",1,true) and
+    again:GetSavedCode("Vanilla Fire")==mage2 and #commands==0)
+click(again.importButton)
+assert(again:GetSavedCode("Vanilla Fire")==mage and #commands==0)
+click(again.backFromBackup)
+assert(again.page==2 and again.savedPage.visible and #commands==0)
+assert(again.backupButton.text=="Backup/Import" and
+    again.backupButton.width==156 and
+    again.deleteButton.position[4]==355 and
+    again.deleteButton.width==112,
+    "Saved footer buttons must have distinct, readable hit areas")
+-- The real-game screenshot had "1 BUILDS"; test singular and plural.
+local pluralStore=_G.MultiBotNT1SavedBuilds
+_G.MultiBotNT1SavedBuilds={["Only Build"]=mage}
+again.selectedName=nil
+again.savedPageIndex=1
+again:UpdateSavedPage()
+assert(again.savedPageCounter.text:find("(1 build)",1,true),
+    "One saved build must use the singular counter")
+_G.MultiBotNT1SavedBuilds=pluralStore
+again:UpdateSavedPage()
+assert(again.savedPageCounter.text:find("builds)",1,true) and
+    #commands==0,
+    "Multiple saved builds must keep plural count and no server commands")
+print("NT1 account-wide saved builds, website filters and backup/import: all checks passed")
 
